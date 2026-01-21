@@ -1,5 +1,4 @@
 from django.db import models
-from moods.models import Mood
 
 class Book(models.Model):
     title = models.CharField(max_length=255)
@@ -8,7 +7,7 @@ class Book(models.Model):
     era = models.CharField(max_length=100, blank=True)
     complexity_level = models.IntegerField(default=3)
     cover_image = models.URLField(blank=True)
-    moods = models.ManyToManyField(Mood, related_name="books", blank=True)
+    #moods = models.ManyToManyField(Mood, related_name="books", blank=True)
     tags = models.ManyToManyField("Tag", blank=True)
 
     def __str__(self):

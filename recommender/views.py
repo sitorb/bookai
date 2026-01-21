@@ -1,34 +1,28 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.conf import settings
-import json
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 
 from books.models import Book
 from .models import Recommendation
 
-@csrf_exempt
-def get_recommendations(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST method allowed"}, status=405)
 
-    try:
-        data = json.loads(request.body)
-        user_input = data.get("text")
-        context_type = data.get("context", "feel")  # feel / want
-    except json.JSONDecodeError:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+@api_view(["POST"])
+@permission_classes([IsAuthenticated])
+def get_recommendations(request):
+    user_input = request.data.get("text")
+    context_type = request.data.get("context", "feel")
 
     if not user_input:
-        return JsonResponse({"error": "Text is required"}, status=400)
+        return Response({"error": "Text is required"}, status=status.HTTP_400_BAD_REQUEST)
 
-    # 🔹 Заглушка: берём первые 5 книг из базы
     books = Book.objects.all()[:5]
 
     recommendations = []
     for book in books:
         reason = f"Эта книга выбрана, потому что вы написали: «{user_input}»."
-        rec = Recommendation.objects.create(
-            user=request.user if request.user.is_authenticated else None,
+        Recommendation.objects.create(
+            user=request.user,
             book=book,
             context_type=context_type,
             user_input=user_input,
@@ -42,4 +36,22 @@ def get_recommendations(request):
             "confidence": 0.5,
         })
 
-    return JsonResponse({"recommendations": recommendations})
+    return Response({"recommendations": recommendations}, status=status.HTTP_200_OK)
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def my_recommendations(request):
+    recs = Recommendation.objects.filter(user=request.user).order_by("-created_at")
+
+    data = [
+        {
+            "title": rec.book.title,
+            "author": rec.book.author,
+            "reason": rec.reason,
+            "confidence": rec.confidence_score,
+            "created_at": rec.created_at,
+        }
+        for rec in recs
+    ]
+
+    return Response(data, status=status.HTTP_200_OK)

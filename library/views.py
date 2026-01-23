@@ -1,56 +1,55 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth.decorators import login_required
-import json
+from rest_framework.views import APIView
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from rest_framework import status
 
 from .models import Favorite
 from books.models import Book
 
-@csrf_exempt
-@login_required
-def add_to_favorites(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
 
-    data = json.loads(request.body)
-    book_id = data.get("book_id")
+class AddToFavoritesView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    try:
-        book = Book.objects.get(id=book_id)
-    except Book.DoesNotExist:
-        return JsonResponse({"error": "Book not found"}, status=404)
+    def post(self, request):
+        book_id = request.data.get("book_id")
 
-    favorite, created = Favorite.objects.get_or_create(user=request.user, book=book)
+        try:
+            book = Book.objects.get(id=book_id)
+        except Book.DoesNotExist:
+            return Response({"error": "Book not found"}, status=status.HTTP_404_NOT_FOUND)
 
-    return JsonResponse({
-        "message": "Added to favorites" if created else "Already in favorites",
-        "book": {"id": book.id, "title": book.title}
-    })
-@csrf_exempt
-@login_required
-def remove_from_favorites(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
+        favorite, created = Favorite.objects.get_or_create(user=request.user, book=book)
 
-    data = json.loads(request.body)
-    book_id = data.get("book_id")
+        return Response({
+            "message": "Added to favorites" if created else "Already in favorites",
+            "book": {"id": book.id, "title": book.title}
+        })
 
-    deleted, _ = Favorite.objects.filter(user=request.user, book_id=book_id).delete()
 
-    if deleted:
-        return JsonResponse({"message": "Removed from favorites"})
-    return JsonResponse({"error": "Not in favorites"}, status=404)
-@login_required
-def list_favorites(request):
-    favorites = Favorite.objects.filter(user=request.user).select_related("book")
+class RemoveFromFavoritesView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    data = [
-        {
-            "id": fav.book.id,
-            "title": fav.book.title,
-            "author": fav.book.author,
-        }
-        for fav in favorites
-    ]
+    def post(self, request):
+        book_id = request.data.get("book_id")
 
-    return JsonResponse({"favorites": data})
+        deleted, _ = Favorite.objects.filter(user=request.user, book_id=book_id).delete()
+
+        if deleted:
+            return Response({"message": "Removed from favorites"})
+        return Response({"error": "Not in favorites"}, status=status.HTTP_404_NOT_FOUND)
+class ListFavoritesView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        favorites = Favorite.objects.filter(user=request.user).select_related("book")
+
+        data = [
+            {
+                "id": fav.book.id,
+                "title": fav.book.title,
+                "author": fav.book.author,
+            }
+            for fav in favorites
+        ]
+
+        return Response({"favorites": data})

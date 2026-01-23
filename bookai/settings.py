@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     "recommender",
     "library",
     "rest_framework",
+    'rest_framework.authtoken',
 
 ]
 

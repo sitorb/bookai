@@ -2,6 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
+from django.http import JsonResponse
 
 from books.models import Book
 from .models import Recommendation
@@ -21,14 +22,15 @@ def get_recommendations(request):
     recommendations = []
     for book in books:
         reason = f"Эта книга выбрана, потому что вы написали: «{user_input}»."
-        Recommendation.objects.create(
+
+
+        RecommendationHistory.objects.create(
             user=request.user,
             book=book,
             context_type=context_type,
             user_input=user_input,
-            reason=reason,
-            confidence_score=0.5,
         )
+
         recommendations.append({
             "title": book.title,
             "author": book.author,
@@ -55,3 +57,31 @@ def my_recommendations(request):
     ]
 
     return Response(data, status=status.HTTP_200_OK)
+from .models import RecommendationHistory
+
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework.permissions import IsAuthenticated
+from .models import Recommendation
+
+class RecommendationHistoryView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        history = Recommendation.objects.filter(user=request.user).select_related("book").order_by("-created_at")
+
+        data = [
+            {
+                "book_id": rec.book.id,
+                "title": rec.book.title,
+                "author": rec.book.author,
+                "reason": rec.reason,
+                "confidence": rec.confidence_score,
+                "context": rec.context_type,
+                "created_at": rec.created_at,
+            }
+            for rec in history
+        ]
+
+        return Response({"history": data})

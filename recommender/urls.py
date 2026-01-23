@@ -1,7 +1,9 @@
 from django.urls import path
-from .views import get_recommendations, my_recommendations
+from .views import get_recommendations, my_recommendations, RecommendationHistoryView
 
 urlpatterns = [
     path("recommend/", get_recommendations),
     path("my-recommendations/", my_recommendations),
+    path("recommendations/history/", RecommendationHistoryView.as_view(), name="recommendation_history"),
+
 ]

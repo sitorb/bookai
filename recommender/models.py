@@ -15,3 +15,11 @@ class Recommendation(models.Model):
     reason = models.TextField()
     confidence_score = models.FloatField(default=0.0)
     created_at = models.DateTimeField(auto_now_add=True)
+
+
+class RecommendationHistory(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    context_type = models.CharField(max_length=20)
+    user_input = models.TextField()
+    created_at = models.DateTimeField(auto_now_add=True)

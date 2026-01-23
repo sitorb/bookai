@@ -1,28 +1,33 @@
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
 from django.contrib.auth import get_user_model
+import json
 
 User = get_user_model()
 
-class RegisterView(APIView):
-    permission_classes = []  # доступ без авторизации
+@csrf_exempt
+def register(request):
+    if request.method != "POST":
+        return JsonResponse({"error": "Only POST allowed"}, status=405)
 
-    def post(self, request):
-        username = request.data.get("username")
-        email = request.data.get("email")
-        password = request.data.get("password")
+    try:
+        data = json.loads(request.body)
+        email = data.get("email")
+        password = data.get("password")
+        username = data.get("username")
+    except:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
 
-        if not username or not password:
-            return Response({"error": "username and password are required"}, status=400)
+    if not email or not password or not username:
+        return JsonResponse({"error": "email, username and password are required"}, status=400)
 
-        if User.objects.filter(username=username).exists():
-            return Response({"error": "Username already exists"}, status=400)
+    if User.objects.filter(email=email).exists():
+        return JsonResponse({"error": "User with this email already exists"}, status=400)
 
-        user = User.objects.create_user(
-            username=username,
-            email=email,
-            password=password
-        )
+    user = User.objects.create_user(
+        email=email,
+        username=username,
+        password=password
+    )
 
-        return Response({"message": "User created successfully"}, status=201)
+    return JsonResponse({"message": "User registered successfully"})

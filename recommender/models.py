@@ -17,9 +17,13 @@ class Recommendation(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
 
+from django.conf import settings
+
 class RecommendationHistory(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
-    book = models.ForeignKey(Book, on_delete=models.CASCADE)
-    context_type = models.CharField(max_length=20)
-    user_input = models.TextField()
+    user = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="recommender_histories"
+    )
+    input_text = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)

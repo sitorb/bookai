@@ -83,10 +83,12 @@ class RecommendationHistoryView(APIView):
 
         return Response({"history": data})
 
-from django.db.models import Count
 from rest_framework.views import APIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
+from django.db.models import Count
+from django.utils.timezone import now, timedelta
+
 from moods.models import RecommendationHistory, RecommendedBook, FavoriteBook
 
 
@@ -94,26 +96,47 @@ class RecommendationAnalyticsView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        total_requests = RecommendationHistory.objects.count()
-        total_recommendations = RecommendedBook.objects.count()
-        total_favorites = FavoriteBook.objects.count()
+        user = request.user
 
+        # Per-user filtering
+        histories = RecommendationHistory.objects.filter(user=user)
+        recommendations = RecommendedBook.objects.filter(history__user=user)
+        favorites = FavoriteBook.objects.filter(user=user)
+
+        # Basic counts
+        total_requests = histories.count()
+        total_recommendations = recommendations.count()
+        total_favorites = favorites.count()
+
+        # Top recommended books
         top_books = (
-            RecommendedBook.objects
+            recommendations
             .values("title", "author")
             .annotate(count=Count("id"))
-            .order_by("-count")[:10]
+            .order_by("-count")[:5]
         )
 
-        recent_requests = RecommendationHistory.objects.order_by("-created_at")[:5]
+        # Recent recommendation requests
+        recent_requests = histories.order_by("-created_at")[:5].values(
+            "input_text", "created_at"
+        )
+
+        # Daily trend (last 7 days)
+        last_7_days = now() - timedelta(days=7)
+        daily_trend = (
+            histories
+            .filter(created_at__gte=last_7_days)
+            .extra(select={'day': "date(created_at)"})
+            .values("day")
+            .annotate(count=Count("id"))
+            .order_by("day")
+        )
 
         return Response({
             "total_requests": total_requests,
             "total_recommendations": total_recommendations,
             "total_favorites": total_favorites,
             "top_books": list(top_books),
-            "recent_requests": [
-                {"input_text": r.input_text, "created_at": r.created_at}
-                for r in recent_requests
-            ]
+            "recent_requests": list(recent_requests),
+            "daily_trend": list(daily_trend),
         })

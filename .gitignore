@@ -1,0 +1,17 @@
+# Python
+venv/
+__pycache__/
+*.py[cod]
+.venv/
+frontend/.vite/
+*.pyc
+
+# Django
+db.sqlite3
+
+# Frontend
+node_modules/
+
+# IDE
+.idea/
+.vscode/

@@ -3,31 +3,26 @@ import reactLogo from './assets/react.svg'
 import viteLogo from '/vite.svg'
 import './App.css'
 import { useEffect, useState } from "react";
+import api from "./services/api";
 
 function App() {
-  const [analytics, setAnalytics] = useState(null);
+  const [data, setData] = useState(null);
 
   useEffect(() => {
-    fetch("http://127.0.0.1:8000/api/recommendations/analytics/")
-      .then((res) => res.json())
-      .then((data) => setAnalytics(data))
-      .catch((err) => console.error(err));
+    api.get("recommendations/")
+      .then(res => setData(res.data))
+      .catch(err => console.error("API error:", err));
   }, []);
 
   return (
-    <div style={{ padding: "2rem", fontFamily: "Arial" }}>
-      <h1>📚 BookAI Dashboard</h1>
-      {!analytics ? (
-        <p>Loading...</p>
-      ) : (
-        <>
-          <p>Total Requests: {analytics.total_requests}</p>
-          <p>Total Recommendations: {analytics.total_recommendations}</p>
-          <p>Total Favorites: {analytics.total_favorites}</p>
-        </>
-      )}
+    <div>
+      <h1>BookAI Frontend</h1>
+      <pre>{JSON.stringify(data, null, 2)}</pre>
     </div>
   );
 }
 
 export default App;
+
+
+export default App

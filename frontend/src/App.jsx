@@ -1,28 +1,13 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import { useEffect, useState } from "react";
-import api from "./services/api";
+import { Routes, Route } from "react-router-dom";
+import Recommend from "./pages/Recommend";
 
 function App() {
-  const [data, setData] = useState(null);
-
-  useEffect(() => {
-    api.get("recommendations/")
-      .then(res => setData(res.data))
-      .catch(err => console.error("API error:", err));
-  }, []);
-
   return (
-    <div>
-      <h1>BookAI Frontend</h1>
-      <pre>{JSON.stringify(data, null, 2)}</pre>
-    </div>
+    <Routes>
+      <Route path="/recommend" element={<Recommend />} />
+      <Route path="*" element={<h2>Page not found</h2>} />
+    </Routes>
   );
 }
 
 export default App;
-
-
-export default App

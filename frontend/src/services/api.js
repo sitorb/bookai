@@ -1,13 +1,13 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: "http://localhost:8000/api/",
+  baseURL: "http://127.0.0.1:8000/api/",
 });
 
-export const getRecommendations = async (text, token) => {
+export const getRecommendations = async (text, context = "feel", token) => {
   const response = await api.post(
     "recommend/",
-    { text },
+    { text, context },
     {
       headers: {
         Authorization: `Bearer ${token}`,

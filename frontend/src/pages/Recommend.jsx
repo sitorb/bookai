@@ -1,72 +1,69 @@
 import { useState } from "react";
 import { getRecommendations } from "../services/api";
 
-function Recommend() {
+export default function Recommend() {
   const [text, setText] = useState("");
-  const [recommendations, setRecommendations] = useState([]);
+  const [context, setContext] = useState("feel");
+  const [results, setResults] = useState([]);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const token = localStorage.getItem("access"); // JWT token
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
 
-const handleSubmit = async (e) => {
-  e.preventDefault();
-  setError("");
-  setLoading(true);
-
-  try {
-    const res = await fetch("http://127.0.0.1:8000/api/recommend/", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        text,
-        context,
-      }),
-    });
-
-    const data = await res.json();
-    console.log("Backend response:", data); // 🔥 MUST appear
-    setResults(data.recommendations || []);
-  } catch (err) {
-    console.error("Fetch error:", err);
-    setError("Backend connection failed.");
-  } finally {
-    setLoading(false);
-  }
-};
-
-
-  
+    try {
+      const token = localStorage.getItem("access");
+      const data = await getRecommendations(text, context, token);
+      console.log("Backend response:", data);
+      setResults(data.recommendations || []);
+    } catch (err) {
+      console.error("API error:", err);
+      setError("Backend connection failed.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
-    <div style={{ padding: "2rem" }}>
-      <h2>Book Recommendation</h2>
+    <div style={{ maxWidth: 600, margin: "0 auto" }}>
+      <h2>Get Book Recommendations</h2>
 
       <form onSubmit={handleSubmit}>
         <textarea
+          placeholder="Describe how you feel or what you want to read..."
           value={text}
           onChange={(e) => setText(e.target.value)}
-          placeholder="Describe your mood or what you want to read..."
           rows={4}
-          style={{ width: "100%", marginBottom: "1rem" }}
+          required
         />
-        <button type="submit">Recommend</button>
+
+        <select value={context} onChange={(e) => setContext(e.target.value)}>
+          <option value="feel">Mood</option>
+          <option value="genre">Genre</option>
+          <option value="topic">Topic</option>
+        </select>
+
+        <button type="submit" disabled={loading}>
+          {loading ? "Thinking..." : "Recommend"}
+        </button>
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <ul>
-        {recommendations.map((book, index) => (
-          <li key={index}>
-            <strong>{book.title}</strong> — {book.author}
-            <p>{book.reason}</p>
-          </li>
-        ))}
-      </ul>
+      {results.length > 0 && (
+        <div>
+          <h3>Recommendations</h3>
+          {results.map((book, i) => (
+            <div key={i} style={{ borderBottom: "1px solid #ccc", marginBottom: 12 }}>
+              <strong>{book.title}</strong> — {book.author}
+              <p>{book.reason}</p>
+              <small>Confidence: {book.confidence}</small>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
-
-export default Recommend;
-

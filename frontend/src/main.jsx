@@ -1,20 +1,10 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Login from "./pages/Login";
-import Recommend from "./pages/Recommend";
-import History from "./pages/History";
-import Analytics from "./pages/Analytics";
+import React from "react";
+import ReactDOM from "react-dom/client";
+import { BrowserRouter } from "react-router-dom";
+import App from "./App";
 
-function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/recommend" element={<Recommend />} />
-        <Route path="/history" element={<History />} />
-        <Route path="/analytics" element={<Analytics />} />
-      </Routes>
-    </BrowserRouter>
-  );
-}
-
-export default App;
+ReactDOM.createRoot(document.getElementById("root")).render(
+  <BrowserRouter>
+    <App />
+  </BrowserRouter>
+);

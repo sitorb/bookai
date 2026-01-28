@@ -2,11 +2,12 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework import status
-
-
+from books.models import Book
+from moods.models import RecommendationHistory, RecommendedBook
 
 @api_view(["POST"])
-@permission_classes([IsAuthenticated])
+@permission_classes([])
+
 def get_recommendations(request):
     user_input = request.data.get("text")
     context_type = request.data.get("context", "feel")
@@ -16,16 +17,21 @@ def get_recommendations(request):
 
     books = Book.objects.all()[:5]
 
+    history = RecommendationHistory.objects.create(
+        user=request.user,
+        input_text=user_input,
+    )
+
     recommendations = []
+
     for book in books:
         reason = f"Эта книга выбрана, потому что вы написали: «{user_input}»."
 
-
-        RecommendationHistory.objects.create(
-            user=request.user,
-            book=book,
-            context_type=context_type,
-            user_input=user_input,
+        RecommendedBook.objects.create(
+            history=history,
+            title=book.title,
+            author=book.author,
+            reason=reason,
         )
 
         recommendations.append({

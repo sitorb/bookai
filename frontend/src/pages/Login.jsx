@@ -2,29 +2,28 @@ import { useState } from "react";
 import { login } from "../services/auth";
 
 export default function Login() {
-  const [form, setForm] = useState({ username: "", password: "" });
-  const [error, setError] = useState("");
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      const res = await login(form.username, form.password);
-      localStorage.setItem("token", res.data.token);
-      window.location.href = "/";
-    } catch {
-      setError("Invalid credentials");
+      const data = await login(username, password);
+      localStorage.setItem("access", data.access);
+      localStorage.setItem("refresh", data.refresh);
+      alert("Logged in!");
+    } catch (err) {
+      alert("Login failed");
+      console.error(err);
     }
   };
 
   return (
-    <div>
+    <form onSubmit={handleSubmit}>
       <h2>Login</h2>
-      <form onSubmit={handleSubmit}>
-        <input placeholder="Username" onChange={(e) => setForm({ ...form, username: e.target.value })} />
-        <input type="password" placeholder="Password" onChange={(e) => setForm({ ...form, password: e.target.value })} />
-        <button type="submit">Login</button>
-      </form>
-      {error && <p>{error}</p>}
-    </div>
+      <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
+      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
+      <button type="submit">Login</button>
+    </form>
   );
 }

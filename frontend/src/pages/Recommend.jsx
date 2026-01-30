@@ -35,6 +35,8 @@ export default function Recommend() {
         />
         <br />
         <button type="submit">Recommend</button>
+        <button onClick={() => saveFavorite(book)}>❤️ Save</button>
+
       </form>
 
       {error && <p style={{ color: "red" }}>{error}</p>}
@@ -48,3 +50,12 @@ export default function Recommend() {
     </div>
   );
 }
+
+const saveFavorite = async (book) => {
+  try {
+    await api.post("library/favorites/", { book_id: book.id });
+    alert("Saved to favorites!");
+  } catch {
+    alert("Failed to save.");
+  }
+};

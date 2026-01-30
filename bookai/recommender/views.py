@@ -4,9 +4,11 @@ from rest_framework.response import Response
 from rest_framework import status
 from books.models import Book
 from moods.models import RecommendationHistory, RecommendedBook
+from django.contrib.auth import get_user_model
+User = get_user_model()
 
 @api_view(["POST"])
-@permission_classes([])
+#@permission_classes([])
 
 def get_recommendations(request):
     user_input = request.data.get("text")
@@ -16,9 +18,10 @@ def get_recommendations(request):
         return Response({"error": "Text is required"}, status=status.HTTP_400_BAD_REQUEST)
 
     books = Book.objects.all()[:5]
+    user = request.user if request.user.is_authenticated else None
 
     history = RecommendationHistory.objects.create(
-        user=request.user,
+        user=user,
         input_text=user_input,
     )
 

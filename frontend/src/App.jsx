@@ -1,13 +1,23 @@
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+import { useState } from "react";
+import Login from "./pages/Login";
 import Recommend from "./pages/Recommend";
 
-function App() {
+export default function App() {
+  const [isAuthenticated, setIsAuthenticated] = useState(
+    !!localStorage.getItem("access")
+  );
+
   return (
     <Routes>
-      <Route path="/recommend" element={<Recommend />} />
-      <Route path="*" element={<h2>Page not found</h2>} />
+      <Route path="/" element={<Navigate to="/recommend" />} />
+      <Route path="/login" element={<Login onLogin={() => setIsAuthenticated(true)} />} />
+      <Route
+        path="/recommend"
+        element={
+          isAuthenticated ? <Recommend /> : <Navigate to="/login" />
+        }
+      />
     </Routes>
   );
 }
-
-export default App;

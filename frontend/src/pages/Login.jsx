@@ -1,29 +1,47 @@
 import { useState } from "react";
-import { login } from "../services/auth";
+import api from "../services/api";
 
-export default function Login() {
+export default function Login({ onLogin }) {
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+
     try {
-      const data = await login(username, password);
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      alert("Logged in!");
+      const res = await api.post("token/", { username, password });
+      localStorage.setItem("access", res.data.access);
+      localStorage.setItem("refresh", res.data.refresh);
+      onLogin(); // redirect after login
     } catch (err) {
-      alert("Login failed");
-      console.error(err);
+      setError("Login failed. Check credentials.");
     }
   };
 
   return (
-    <form onSubmit={handleSubmit}>
+    <div style={{ maxWidth: 400, margin: "0 auto" }}>
       <h2>Login</h2>
-      <input value={username} onChange={e => setUsername(e.target.value)} placeholder="Username" />
-      <input type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="Password" />
-      <button type="submit">Login</button>
-    </form>
+      <form onSubmit={handleSubmit}>
+        <input
+          placeholder="Username"
+          value={username}
+          onChange={(e) => setUsername(e.target.value)}
+          required
+        />
+        <br />
+        <input
+          type="password"
+          placeholder="Password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          required
+        />
+        <br />
+        <button type="submit">Login</button>
+      </form>
+      {error && <p style={{ color: "red" }}>{error}</p>}
+    </div>
   );
 }

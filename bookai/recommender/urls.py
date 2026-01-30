@@ -3,7 +3,7 @@ from .views import get_recommendations, my_recommendations, RecommendationHistor
 
 
 urlpatterns = [
-    path("recommend/", get_recommendations),
+    path("recommend/", get_recommendations, name="recommend"),
     path("my-recommendations/", my_recommendations),
     path("recommendations/analytics/", RecommendationAnalyticsView.as_view(), name="recommendation_analytics"),
 

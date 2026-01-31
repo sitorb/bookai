@@ -1,20 +1,44 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
+import Login from "./pages/Login";
+import Dashboard from "./pages/Dashboard";
+import Recommend from "./pages/Recommend";
+import History from "./pages/History";
 
-function Home() {
-  return <h1 className="text-3xl font-bold">Home page works 🎉</h1>;
-}
+const isAuthenticated = () => !!localStorage.getItem("access");
 
-function Recommend() {
-  return <h1 className="text-3xl font-bold">Recommend page works 📚</h1>;
+function PrivateRoute({ children }) {
+  return isAuthenticated() ? children : <Navigate to="/login" />;
 }
 
 export default function App() {
   return (
-    <Router>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/recommend" element={<Recommend />} />
-      </Routes>
-    </Router>
+    <Routes>
+      <Route path="/" element={<Navigate to="/login" />} />
+      <Route path="/login" element={<Login />} />
+      <Route
+        path="/dashboard"
+        element={
+          <PrivateRoute>
+            <Dashboard />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/recommend"
+        element={
+          <PrivateRoute>
+            <Recommend />
+          </PrivateRoute>
+        }
+      />
+      <Route
+        path="/history"
+        element={
+          <PrivateRoute>
+            <History />
+          </PrivateRoute>
+        }
+      />
+    </Routes>
   );
 }

@@ -1,17 +1,20 @@
 import { useEffect, useState } from "react";
-import api from "../services/api";
+import api from "../api";
 
 export default function History() {
   const [history, setHistory] = useState([]);
-  const [error, setError] = useState("");
 
   useEffect(() => {
     const fetchHistory = async () => {
+      const token = localStorage.getItem("access");
       try {
-        const res = await api.get("recommendations/history/");
-        setHistory(res.data.history || res.data);
-      } catch (err) {
-        setError("Failed to load history.");
+        const res = await api.get("history/", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setHistory(res.data);
+      } catch {
+        alert("You must be logged in.");
+        window.location.href = "/login";
       }
     };
 
@@ -19,19 +22,18 @@ export default function History() {
   }, []);
 
   return (
-    <div style={{ maxWidth: 700, margin: "0 auto" }}>
-      <h2>Your Recommendation History</h2>
-      {error && <p style={{ color: "red" }}>{error}</p>}
-
-      {history.length === 0 && <p>No history yet.</p>}
-
-      {history.map((rec, i) => (
-        <div key={i} style={{ borderBottom: "1px solid #ccc", marginBottom: 12 }}>
-          <strong>{rec.title}</strong> — {rec.author}
-          <p>{rec.reason}</p>
-          <small>{new Date(rec.created_at).toLocaleString()}</small>
-        </div>
-      ))}
+    <div className="min-h-screen bg-gray-100 p-6">
+      <h1 className="text-2xl font-bold mb-4">🕘 Recommendation History</h1>
+      <div className="space-y-4 max-w-xl">
+        {history.map((item, index) => (
+          <div key={index} className="bg-white p-4 rounded shadow">
+            <p className="font-semibold">Input:</p>
+            <p className="mb-2">{item.input_text}</p>
+            <p className="font-semibold">Recommendation:</p>
+            <pre className="whitespace-pre-wrap">{item.recommendation}</pre>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

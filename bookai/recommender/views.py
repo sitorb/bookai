@@ -149,3 +149,24 @@ class RecommendationAnalyticsView(APIView):
             "recent_requests": list(recent_requests),
             "daily_trend": list(daily_trend),
         })
+
+
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import RecommendationHistory
+
+@api_view(["GET"])
+@permission_classes([IsAuthenticated])
+def get_history(request):
+    history = RecommendationHistory.objects.filter(user=request.user).order_by("-created_at")
+    data = [
+        {
+            "id": h.id,
+            "input_text": h.input_text,
+            "recommendations": h.recommendations,
+            "created_at": h.created_at,
+        }
+        for h in history
+    ]
+    return Response(data)

@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { getRecommendations } from "../api";
+import { getRecommendations } from "../services/api";
+
 
 export default function Recommend() {
   const [text, setText] = useState("");

@@ -1,15 +1,28 @@
-import axios from "axios";
+const API_BASE = "http://127.0.0.1:8000/api";
 
-const api = axios.create({
-  baseURL: "http://127.0.0.1:8000/api/",
-});
-
-api.interceptors.request.use((config) => {
+export async function getRecommendations(inputText) {
   const token = localStorage.getItem("access");
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
-  }
-  return config;
-});
 
-export default api;
+  const response = await fetch(`${API_BASE}/recommend/`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ input_text: inputText }),
+  });
+
+  return response.json();
+}
+
+export async function getHistory() {
+  const token = localStorage.getItem("access");
+
+  const response = await fetch(`${API_BASE}/history/`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+
+  return response.json();
+}

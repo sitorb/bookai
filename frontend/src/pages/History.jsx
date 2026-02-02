@@ -1,19 +1,22 @@
 import { useEffect, useState } from "react";
+import { apiFetch } from "../services/api";
+import { useNavigate } from "react-router-dom";
 
 export default function History() {
   const [history, setHistory] = useState([]);
+  const navigate = useNavigate();
 
   useEffect(() => {
-    const token = localStorage.getItem("access");
-
-    fetch("http://127.0.0.1:8000/api/history/", {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    })
-      .then((res) => res.json())
-      .then((data) => setHistory(data));
-  }, []);
+    apiFetch("/api/history/")
+      .then((res) => {
+        if (!res.ok) throw new Error("Unauthorized");
+        return res.json();
+      })
+      .then(setHistory)
+      .catch(() => {
+        navigate("/login");
+      });
+  }, [navigate]);
 
   return (
     <div className="min-h-screen bg-gray-100 p-6">

@@ -57,10 +57,13 @@ export default function Recommend() {
         <ul className="mt-4 space-y-2">
           {recommendations.map((book, index) => (
             <li key={index} className="border p-2 rounded">
-              {book}
+              <p className="font-semibold">{book.title}</p>
+              <p className="text-sm text-gray-600">{book.author}</p>
+              <p className="text-sm">{book.reason}</p>
             </li>
           ))}
         </ul>
+
       </div>
     </div>
   );

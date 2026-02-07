@@ -1,7 +1,5 @@
-from django.urls import path
-from .views import get_recommendations, get_history
+from django.urls import path, include
 
 urlpatterns = [
-    path("", get_recommendations),
-    path("history/", get_history),
+    path("api/recommend/", include("recommender.urls")),
 ]

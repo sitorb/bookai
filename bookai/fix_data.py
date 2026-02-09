@@ -1,16 +1,18 @@
+# fix_data.py (Updated Import Section)
 import os
 import django
 
 os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bookai.settings')
 django.setup()
 
-from books.models import Book
-from moods.models import Mood
+from books.models import Book, Mood 
 
 def clean_and_seed():
-    print("🧹 Cleaning old Russian data...")
-    Book.objects.all().delete()
-    Mood.objects.all().delete()
+    print("🧹 Cleaning old data...")
+    #Book.objects.all().delete()
+    #Mood.objects.all().delete()
+
+    
 
     print("🌱 Injecting English Moods...")
     moods = {

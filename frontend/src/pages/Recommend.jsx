@@ -1,70 +1,82 @@
-import { useState } from "react";
+import React, { useState } from 'react';
+import { getMoodRecommendations } from '../services/api';
 
-export default function Recommend() {
-  const [input, setInput] = useState("");
-  const [recommendations, setRecommendations] = useState([]);
-  const [error, setError] = useState("");
+const Recommend = () => {
+    const [query, setQuery] = useState('');
+    const [results, setResults] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [mood, setMood] = useState('');
 
-  const getRecommendations = async () => {
-    try {
-      const token = localStorage.getItem("access");
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        if (!query.trim()) return;
 
-      const res = await fetch("http://127.0.0.1:8000/api/recommend/", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ text: input }),
-      });
+        setLoading(true);
+        try {
+            const data = await getMoodRecommendations(query);
+            setResults(data.recommendations);
+            setMood(data.detected_mood);
+        } catch (err) {
+            console.error("Recommendation failed", err);
+        } finally {
+            setLoading(false);
+        }
+    };
 
-      const data = await res.json();
+    return (
+        <div className="min-h-screen bg-stone-50 p-6 sm:p-12">
+            <div className="max-w-4xl mx-auto">
+                <header className="text-center mb-12">
+                    <h1 className="text-4xl font-serif text-stone-900 mb-4">AI Librarian</h1>
+                    <p className="text-stone-600 italic">"Tell me how you feel, and I will find your next world."</p>
+                </header>
 
-      if (!res.ok) {
-        setError("Failed to fetch recommendations");
-        return;
-      }
+                <form onSubmit={handleSubmit} className="mb-12">
+                    <div className="relative">
+                        <textarea
+                            className="w-full p-6 rounded-2xl border-2 border-stone-200 focus:border-stone-400 outline-none transition-all text-lg shadow-sm"
+                            rows="4"
+                            placeholder="e.g., I'm feeling a bit lonely and want a story that feels cozy and warm..."
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                        />
+                        <button 
+                            type="submit"
+                            disabled={loading}
+                            className="absolute bottom-4 right-4 bg-stone-800 text-white px-8 py-2 rounded-xl hover:bg-stone-700 disabled:bg-stone-400 transition-colors"
+                        >
+                            {loading ? "Searching..." : "Recommend"}
+                        </button>
+                    </div>
+                </form>
 
-      setRecommendations(data.recommendations || []);
-      setError("");
-    } catch (err) {
-      setError("Server error");
-    }
-  };
+                {mood && (
+                    <div className="mb-6 text-center">
+                        <span className="text-sm uppercase tracking-widest text-stone-400 font-semibold">
+                            Detected Mood: {mood}
+                        </span>
+                    </div>
+                )}
 
-  return (
-    <div className="min-h-screen bg-gray-100 p-6">
-      <div className="max-w-xl mx-auto bg-white p-6 rounded-xl shadow">
-        <h1 className="text-2xl font-bold mb-4 text-center">📚 Book Recommender</h1>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    {results.map((book) => (
+                        <div key={book.id} className="bg-white p-6 rounded-2xl border border-stone-100 shadow-md hover:shadow-xl transition-shadow">
+                            <h2 className="text-2xl font-serif text-stone-800 mb-1">{book.title}</h2>
+                            <p className="text-stone-500 font-medium mb-4">by {book.author}</p>
+                            <p className="text-stone-600 line-clamp-3 mb-4">{book.summary}</p>
+                            <div className="flex flex-wrap gap-2">
+                                {book.moods.map((m, i) => (
+                                    <span key={i} className="px-3 py-1 bg-stone-100 text-stone-500 text-xs rounded-full uppercase">
+                                        {m.name}
+                                    </span>
+                                ))}
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+};
 
-        <textarea
-          className="w-full border rounded p-2 mb-4"
-          rows={4}
-          placeholder="Describe what kind of book you want..."
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-
-        <button
-          onClick={getRecommendations}
-          className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
-        >
-          Get Recommendations
-        </button>
-
-        {error && <p className="text-red-500 mt-3">{error}</p>}
-
-        <ul className="mt-4 space-y-2">
-          {recommendations.map((book, index) => (
-            <li key={index} className="border p-2 rounded">
-              <p className="font-semibold">{book.title}</p>
-              <p className="text-sm text-gray-600">{book.author}</p>
-              <p className="text-sm">{book.reason}</p>
-            </li>
-          ))}
-        </ul>
-
-      </div>
-    </div>
-  );
-}
+export default Recommend;

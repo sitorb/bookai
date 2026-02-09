@@ -3,7 +3,7 @@ from rest_framework import serializers
 from .models import Book, Mood
 
 class MoodSerializer(serializers.ModelSerializer):
-    class __all__:
+    class Meta:
         model = Mood
         fields = ['name', 'description']
 

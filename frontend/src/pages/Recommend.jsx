@@ -47,6 +47,12 @@ const Recommend = () => {
                         >
                             {loading ? "Searching..." : "Recommend"}
                         </button>
+                        <button 
+                            onClick={() => handleFavorite(book.id)}
+                            className="mt-4 text-red-500 hover:text-red-600 transition-colors"
+>
+                            ♥ Save to Library
+                        </button>
                     </div>
                 </form>
 
@@ -79,4 +85,29 @@ const Recommend = () => {
     );
 };
 
+const handleFavorite = async (bookId) => {
+    // Get the token you stored during login (usually in localStorage)
+    const token = localStorage.getItem('token'); 
+
+    if (!token) {
+        alert("Please login to save books!");
+        return;
+    }
+
+    try {
+        const response = await fetch(`http://127.0.0.1:8000/api/books/favorite/${bookId}/`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Token ${token}`,
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (response.ok) {
+            alert("Book saved to your library! ❤️");
+        }
+    } catch (err) {
+        console.error("Error favoriting book", err);
+    }
+};
 export default Recommend;

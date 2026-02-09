@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import RecommendationHistory, RecommendedBook
+from .models import Recommendation
 
-admin.site.register(RecommendationHistory)
-admin.site.register(RecommendedBook)
+@admin.register(Recommendation)
+class RecommendationAdmin(admin.ModelAdmin):
+    list_display = ('user', 'book', 'created_at')

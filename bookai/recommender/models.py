@@ -1,15 +1,14 @@
+# recommender/models.py
 from django.db import models
 from django.conf import settings
+from books.models import Book
 
-
-class RecommendationHistory(models.Model):
-    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, null=True, blank=True)
-    input_text = models.TextField()
+class Recommendation(models.Model):  # Make sure it's not 'RecommendationHistory'
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    book = models.ForeignKey(Book, on_delete=models.CASCADE)
+    context_provided = models.TextField()
+    why_recommended = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-
-class RecommendedBook(models.Model):
-    history = models.ForeignKey(RecommendationHistory, related_name="books", on_delete=models.CASCADE)
-    title = models.CharField(max_length=255)
-    author = models.CharField(max_length=255)
-    reason = models.TextField()
+    def __str__(self):
+        return f"{self.user.username} - {self.book.title}"

@@ -24,7 +24,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
-from .models import Book, Favorite
+from .models import Book
 
 class ToggleFavoriteView(APIView):
     permission_classes = [IsAuthenticated] # User must be logged in

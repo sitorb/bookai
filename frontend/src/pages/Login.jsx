@@ -1,74 +1,73 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
-export default function Login() {
-  const [username, setUsername] = useState("");
-  const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
-  const navigate = useNavigate();
+const Login = () => {
+    const [credentials, setCredentials] = useState({ username: '', password: '' });
+    const [error, setError] = useState('');
+    const navigate = useNavigate();
 
-  const submit = async () => {
-    try {
-      const res = await fetch("http://127.0.0.1:8000/api/token/", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ username, password }),
-      });
+    const handleSubmit = async (e) => {
+        e.preventDefault();
+        setError('');
+        try {
+            // Django Rest Framework Token Auth endpoint
+            const res = await axios.post('http://127.0.0.1:8000/api/token/', credentials);
+            
+            // Save token and username for the Navbar and Library access
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('username', credentials.username);
+            
+            navigate('/recommend'); 
+        } catch (err) {
+            setError('Invalid username or password. Please try again.');
+            console.error("Login error:", err);
+        }
+    };
 
-      const data = await res.json();
+    return (
+        <div className="min-h-screen flex items-center justify-center bg-stone-100 p-4 text-stone-900">
+            <form onSubmit={handleSubmit} className="bg-white p-10 rounded-3xl shadow-2xl w-full max-w-md border border-stone-200">
+                <h2 className="text-4xl font-serif text-center mb-8">Welcome Back</h2>
+                
+                {error && (
+                    <div className="bg-red-50 text-red-600 p-3 rounded-lg text-sm text-center mb-6 font-medium border border-red-100">
+                        {error}
+                    </div>
+                )}
+                
+                <div className="space-y-6">
+                    <div>
+                        <label className="block text-sm font-semibold text-stone-500 mb-2 uppercase tracking-wider">Username</label>
+                        <input 
+                            type="text" 
+                            required
+                            className="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-xl outline-none focus:border-stone-800 transition-all"
+                            placeholder="Enter your username"
+                            onChange={(e) => setCredentials({...credentials, username: e.target.value})}
+                        />
+                    </div>
+                    <div>
+                        <label className="block text-sm font-semibold text-stone-500 mb-2 uppercase tracking-wider">Password</label>
+                        <input 
+                            type="password" 
+                            required
+                            className="w-full p-4 bg-stone-50 border-2 border-stone-200 rounded-xl outline-none focus:border-stone-800 transition-all"
+                            placeholder="••••••••"
+                            onChange={(e) => setCredentials({...credentials, password: e.target.value})}
+                        />
+                    </div>
+                    <button className="w-full bg-stone-800 text-white p-4 rounded-xl font-bold hover:bg-stone-700 transition-all shadow-lg active:scale-95">
+                        Sign In
+                    </button>
+                </div>
+                
+                <p className="mt-8 text-center text-stone-500">
+                    Don't have an account? <a href="/register" className="text-stone-800 font-bold underline">Join the club</a>
+                </p>
+            </form>
+        </div>
+    );
+};
 
-      if (!res.ok) {
-        setError("Invalid username or password");
-        return;
-      }
-
-      localStorage.setItem("access", data.access);
-      localStorage.setItem("refresh", data.refresh);
-      navigate("/recommend");
-    } catch (err) {
-      setError("Server error. Try again.");
-    }
-  };
-
-  return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
-      <div className="bg-white p-6 rounded-xl shadow w-full max-w-sm">
-        <h1 className="text-2xl font-bold mb-4 text-center">🔐 Login</h1>
-
-        {error && <p className="text-red-500 mb-3">{error}</p>}
-
-        <input
-          className="w-full border rounded p-2 mb-3"
-          placeholder="Username"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-        />
-
-        <input
-          type="password"
-          className="w-full border rounded p-2 mb-4"
-          placeholder="Password"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-        />
-
-        <button
-          onClick={submit}
-          className="w-full bg-black text-white py-2 rounded hover:bg-gray-800"
-        >
-          Login
-        </button>
-        <p className="text-sm text-center mt-4">
-              Don’t have an account?{" "}
-        <button
-        className="text-blue-600 underline"
-        onClick={() => navigate("/register")}
-        >
-          Register
-        </button>
-        </p>
-
-      </div>
-    </div>
-  );
-}
+export default Login;

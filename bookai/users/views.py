@@ -1,33 +1,29 @@
-from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
-from django.contrib.auth import get_user_model
-import json
+# users/views.py
+from rest_framework import status
+from rest_framework.response import Response
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.authtoken.models import Token
+from django.contrib.auth.models import User
 
-User = get_user_model()
+@api_view(['POST'])
+@permission_classes([AllowAny])
+def register_user(request):
+    username = request.data.get('username')
+    password = request.data.get('password')
+    email = request.data.get('email')
 
-@csrf_exempt
-def register(request):
-    if request.method != "POST":
-        return JsonResponse({"error": "Only POST allowed"}, status=405)
+    if not username or not password:
+        return Response({'error': 'Username and password required'}, status=status.HTTP_400_BAD_REQUEST)
 
-    try:
-        data = json.loads(request.body)
-        email = data.get("email")
-        password = data.get("password")
-        username = data.get("username")
-    except:
-        return JsonResponse({"error": "Invalid JSON"}, status=400)
+    if User.objects.filter(username=username).exists():
+        return Response({'error': 'Username already taken'}, status=status.HTTP_400_BAD_REQUEST)
 
-    if not email or not password or not username:
-        return JsonResponse({"error": "email, username and password are required"}, status=400)
-
-    if User.objects.filter(email=email).exists():
-        return JsonResponse({"error": "User with this email already exists"}, status=400)
-
-    user = User.objects.create_user(
-        email=email,
-        username=username,
-        password=password
-    )
-
-    return JsonResponse({"message": "User registered successfully"})
+    user = User.objects.create_user(username=username, password=password, email=email)
+    token, _ = Token.objects.get_or_create(user=user)
+    
+    return Response({
+        'token': token.key,
+        'username': user.username,
+        'message': 'User created successfully'
+    }, status=status.HTTP_201_CREATED)

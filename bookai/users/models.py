@@ -18,3 +18,14 @@ class Profile(models.Model):
 
     def __str__(self):
         return self.user.username
+    
+
+# users/models.py
+class SearchHistory(models.Model):
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    query_text = models.TextField()
+    detected_mood = models.CharField(max_length=100)
+    timestamp = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-timestamp'] # Newest first

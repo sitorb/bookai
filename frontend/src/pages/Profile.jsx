@@ -1,64 +1,88 @@
-// frontend/src/pages/Profile.jsx
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 
 const Profile = () => {
     const [userData, setUserData] = useState({ username: '', email: '', bio: '' });
-    const [editing, setEditing] = useState(false);
-    const navigate = useNavigate();
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (!token) return navigate('/login');
+        
+        const fetchProfileData = async () => {
+            try {
+                const [profileRes, historyRes] = await Promise.all([
+                    axios.get('http://127.0.0.1:8000/api/users/profile/', {
+                        headers: { 'Authorization': `Token ${token}` }
+                    }),
+                    axios.get('http://127.0.0.1:8000/api/users/history/', {
+                        headers: { 'Authorization': `Token ${token}` }
+                    })
+                ]);
+                setUserData(profileRes.data);
+                setHistory(historyRes.data);
+            } catch (err) {
+                toast.error("Error loading profile");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-        axios.get('http://127.0.0.1:8000/api/users/profile/', {
-            headers: { 'Authorization': `Token ${token}` }
-        }).then(res => setUserData(res.data))
-          .catch(err => console.error(err));
-    }, [navigate]);
+        fetchProfileData();
+    }, []);
 
-    const handleUpdate = async () => {
-        const token = localStorage.getItem('token');
-        await axios.put('http://127.0.0.1:8000/api/users/profile/', 
-            { bio: userData.bio },
-            { headers: { 'Authorization': `Token ${token}` }}
-        );
-        setEditing(false);
-    };
+    if (loading) return <div className="p-20 text-center italic">Loading profile...</div>;
 
     return (
-        <div className="min-h-screen bg-stone-50 p-12 text-stone-900">
-            <div className="max-w-2xl mx-auto bg-white p-10 rounded-3xl shadow-xl border border-stone-200">
-                <div className="text-center mb-8">
-                    <div className="w-24 h-24 bg-stone-800 text-white rounded-full flex items-center justify-center text-4xl font-serif mx-auto mb-4">
-                        {userData.username[0]?.toUpperCase()}
-                    </div>
-                    <h1 className="text-3xl font-serif">{userData.username}</h1>
-                    <p className="text-stone-500">{userData.email}</p>
-                </div>
+        <div className="max-w-4xl mx-auto p-8">
+            <div className="bg-white p-8 rounded-3xl shadow-lg mb-8">
+                <h1 className="text-3xl font-serif mb-2">{userData.username}</h1>
+                <p className="text-stone-500 mb-4">{userData.email}</p>
+                <p className="text-stone-700">{userData.bio || "No bio added yet."}</p>
+            </div>
 
-                <div className="border-t border-stone-100 pt-8">
-                    <h2 className="text-sm font-bold uppercase tracking-widest text-stone-400 mb-4">Reader Bio</h2>
-                    {editing ? (
-                        <div className="space-y-4">
-                            <textarea 
-                                className="w-full p-4 border-2 border-stone-200 rounded-xl outline-none focus:border-stone-800"
-                                value={userData.bio}
-                                onChange={(e) => setUserData({...userData, bio: e.target.value})}
-                            />
-                            <button onClick={handleUpdate} className="bg-stone-800 text-white px-6 py-2 rounded-full font-bold">Save Bio</button>
-                        </div>
-                    ) : (
-                        <div>
-                            <p className="text-stone-700 leading-relaxed mb-4">{userData.bio || "No bio yet. Tell us what you like to read!"}</p>
-                            <button onClick={() => setEditing(true)} className="text-stone-400 hover:text-stone-800 text-sm font-bold underline">Edit Profile</button>
-                        </div>
-                    )}
-                </div>
+            <h2 className="text-xl font-serif mb-4 text-stone-800 uppercase tracking-widest">Mood History</h2>
+            <div className="space-y-4">
+                {history.map((item, index) => (
+                    <div key={index} className="bg-white p-4 rounded-xl border border-stone-200 flex justify-between shadow-sm">
+                        <span className="italic">"{item.query}"</span>
+                        <span className="font-bold text-stone-400 uppercase text-xs">{item.mood}</span>
+                    </div>
+                ))}
             </div>
         </div>
     );
 };
+
+// Inside src/pages/Profile.jsx
+
+const handleClearHistory = async () => {
+    const token = localStorage.getItem('token');
+    if (!window.confirm("Are you sure you want to delete your entire search history?")) return;
+
+    try {
+        await axios.delete('http://127.0.0.1:8000/api/users/history/clear/', {
+            headers: { 'Authorization': `Token ${token}` }
+        });
+        setHistory([]); // Clear the list on the screen instantly
+        toast.success("History wiped clean!");
+    } catch (err) {
+        toast.error("Failed to clear history.");
+    }
+};
+
+// ... in the return statement, above the history map ...
+<div className="flex justify-between items-center mb-6">
+    <h2 className="text-xl font-serif text-stone-800 uppercase tracking-widest">Mood History</h2>
+    {history.length > 0 && (
+        <button 
+            onClick={handleClearHistory}
+            className="text-xs font-bold text-red-400 hover:text-red-600 transition-colors"
+        >
+            Clear All
+        </button>
+    )}
+</div>
 
 export default Profile;

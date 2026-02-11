@@ -5,4 +5,4 @@ class UsersConfig(AppConfig):
     name = 'users'
 
     def ready(self):
-        import users.signals # This activates the logic
+        import users.signals # This is what you were missing!

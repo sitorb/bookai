@@ -28,3 +28,26 @@ def register_user(request):
         }, status=status.HTTP_201_CREATED)
     except Exception as e:
         return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+    
+
+# users/views.py
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from .models import Profile
+
+@api_view(['GET', 'PUT'])
+@permission_classes([IsAuthenticated])
+def profile_view(request):
+    profile, created = Profile.objects.get_or_create(user=request.user)
+    
+    if request.method == 'GET':
+        return Response({
+            'username': request.user.username,
+            'email': request.user.email,
+            'bio': profile.bio
+        })
+    
+    if request.method == 'PUT':
+        profile.bio = request.data.get('bio', profile.bio)
+        profile.save()
+        return Response({'message': 'Profile updated successfully'})

@@ -10,7 +10,7 @@ const Recommend = () => {
     const [savedBookIds, setSavedBookIds] = useState(new Set());
     const navigate = useNavigate();
 
-    // The Hook MUST stay inside the component function
+    // AUTH GUARD: Redirect if no token exists
     useEffect(() => {
         const token = localStorage.getItem('token');
         if (!token) {
@@ -21,6 +21,7 @@ const Recommend = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         if (!query.trim()) return;
+
         setLoading(true);
         try {
             const data = await getMoodRecommendations(query);
@@ -50,50 +51,68 @@ const Recommend = () => {
 
             if (response.ok) {
                 const newSaved = new Set(savedBookIds);
-                isAdded ? newSaved.delete(bookId) : newSaved.add(bookId);
+                if (isAdded) newSaved.delete(bookId);
+                else newSaved.add(bookId);
                 setSavedBookIds(newSaved);
             }
         } catch (err) {
-            console.error("Toggle failed", err);
+            console.error("Favorite toggle failed", err);
         }
     };
 
     return (
-        <div className="min-h-screen bg-stone-50 p-8 text-stone-900">
+        <div className="min-h-screen bg-stone-50 p-6 sm:p-12 text-stone-900">
             <div className="max-w-4xl mx-auto">
                 <header className="text-center mb-12">
                     <h1 className="text-5xl font-serif mb-4">AI Librarian</h1>
-                    <p className="text-stone-600 italic text-xl">"Find your next world."</p>
+                    <p className="text-stone-600 italic text-xl">"Tell me how you feel, and I will find your next world."</p>
                 </header>
 
-                <form onSubmit={handleSubmit} className="mb-16 flex flex-col gap-4">
-                    <textarea
-                        className="w-full p-6 rounded-2xl border-2 border-stone-300 bg-white outline-none focus:border-stone-500 shadow-md"
-                        rows="3"
-                        placeholder="How are you feeling?"
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
-                    <button type="submit" disabled={loading} className="bg-stone-800 text-white px-8 py-3 rounded-full hover:bg-stone-700 font-bold self-center">
-                        {loading ? "Searching..." : "Recommend"}
-                    </button>
+                <form onSubmit={handleSubmit} className="mb-16">
+                    <div className="flex flex-col gap-4">
+                        <textarea
+                            className="w-full p-6 rounded-2xl border-2 border-stone-300 focus:border-stone-500 bg-white outline-none transition-all text-lg shadow-md"
+                            rows="3"
+                            placeholder="e.g., I'm feeling a bit lonely and want a story that feels cozy..."
+                            value={query}
+                            onChange={(e) => setQuery(e.target.value)}
+                        />
+                        <button 
+                            type="submit"
+                            disabled={loading}
+                            className="self-center bg-stone-800 text-white px-12 py-3 rounded-full hover:bg-stone-700 disabled:bg-stone-400 transition-all shadow-lg font-bold"
+                        >
+                            {loading ? "Reading your mind..." : "Get Recommendations"}
+                        </button>
+                    </div>
                 </form>
+
+                {mood && (
+                    <div className="mb-8 text-center animate-fade-in">
+                        <span className="px-4 py-2 bg-stone-200 text-stone-700 rounded-full text-sm uppercase tracking-widest font-bold">
+                            Detected Mood: {mood}
+                        </span>
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                     {results.map((book) => (
-                        <div key={book.id} className="bg-white p-8 rounded-3xl border border-stone-200 shadow-xl flex flex-col justify-between">
+                        <div key={book.id} className="bg-white p-8 rounded-3xl border border-stone-200 shadow-xl flex flex-col justify-between hover:scale-[1.01] transition-transform">
                             <div>
                                 <h2 className="text-3xl font-serif mb-2">{book.title}</h2>
-                                <p className="text-stone-500 mb-4">by {book.author}</p>
-                                <p className="text-stone-600 mb-6">{book.summary}</p>
+                                <p className="text-stone-500 font-medium text-lg mb-4">by {book.author}</p>
+                                <p className="text-stone-600 leading-relaxed mb-6">{book.summary}</p>
                             </div>
+                            
                             <button 
                                 onClick={() => handleToggleFavorite(book.id)}
-                                className={`w-full py-3 border-2 rounded-xl font-bold ${
-                                    savedBookIds.has(book.id) ? "bg-stone-800 text-white" : "text-red-500 border-red-100 hover:bg-red-50"
+                                className={`w-full py-3 border-2 rounded-xl font-bold transition-all flex items-center justify-center gap-2 ${
+                                    savedBookIds.has(book.id) 
+                                    ? "border-stone-800 bg-stone-800 text-white" 
+                                    : "border-red-200 text-red-500 hover:bg-red-50"
                                 }`}
                             >
-                                {savedBookIds.has(book.id) ? "✓ Saved" : "♥ Save"}
+                                {savedBookIds.has(book.id) ? "✓ Saved to Library" : "♥ Save to Library"}
                             </button>
                         </div>
                     ))}

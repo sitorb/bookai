@@ -44,6 +44,8 @@ const Navbar = () => {
                             >
                                 Join
                             </Link>
+                            // Inside Navbar.jsx flex container
+                            <Link to="/profile" className="hover:text-stone-900 transition-colors">Profile</Link>
                         </>
                     )}
                 </div>

@@ -25,7 +25,8 @@ class Favorite(models.Model):
     user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
     book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='book_favorites') # Changed name
     created_at = models.DateTimeField(auto_now_add=True)
-
+    rating = models.IntegerField(default=0)
+    
     class Meta:
         unique_together = ('user', 'book')
 

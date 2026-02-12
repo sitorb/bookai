@@ -52,3 +52,17 @@ def list_favorites(request):
     ]
 
     return Response({"favorites": data})
+
+@api_view(['POST'])
+@permission_classes([IsAuthenticated])
+def rate_book(request):
+    book_id = request.data.get('book_id')
+    rating = request.data.get('rating') # Expecting 1-5
+    
+    try:
+        fav = Favorite.objects.get(user=request.user, book_id=book_id)
+        fav.rating = rating
+        fav.save()
+        return Response({'message': 'Rating updated'})
+    except Favorite.DoesNotExist:
+        return Response({'error': 'Book not in library'}, status=404)

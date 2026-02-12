@@ -81,6 +81,7 @@ function App() {
               
               {/* 404 Redirect to home */}
               <Route path="*" element={<Navigate to="/recommend" replace />} />
+              <Route path="/discovery" element={<Discovery />} />
             </Routes>
           </main>
         </ErrorBoundary>

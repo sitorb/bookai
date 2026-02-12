@@ -66,3 +66,22 @@ def rate_book(request):
         return Response({'message': 'Rating updated'})
     except Favorite.DoesNotExist:
         return Response({'error': 'Book not in library'}, status=404)
+    
+
+# library/views.py
+from rest_framework.response import Response
+from .models import Favorite
+
+@api_view(['GET'])
+@permission_classes([AllowAny]) # Anyone can see what's trending
+def community_feed(request):
+    # Fetch the 10 most recent saves across the whole site
+    recent_saves = Favorite.objects.select_related('book').order_by('-id')[:10]
+    
+    data = [{
+        'book_title': fav.book.title,
+        'author': fav.book.author,
+        'time_ago': "Just now" # You can use humanize for real timestamps later
+    } for fav in recent_saves]
+    
+    return Response(data)

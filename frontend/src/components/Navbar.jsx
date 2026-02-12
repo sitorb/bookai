@@ -14,18 +14,29 @@ const Navbar = () => {
     return (
         <nav className="bg-white border-b border-stone-200 px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
             <Link to="/recommend" className="text-2xl font-serif font-bold text-stone-900">BookAI</Link>
+            
             <div className="flex gap-6 items-center font-medium text-stone-600">
+                {/* Visible to everyone */}
                 <Link to="/recommend" className="hover:text-stone-900">Discover</Link>
+                <Link to="/discovery" className="hover:text-stone-900">Community</Link>
+
                 {token ? (
                     <>
                         <Link to="/library" className="hover:text-stone-900">Library</Link>
                         <Link to="/profile" className="hover:text-stone-900">Profile</Link>
-                        <button onClick={handleLogout} className="text-red-500 text-sm font-bold ml-4 border border-red-100 px-3 py-1 rounded-md hover:bg-red-50">
+                        <button 
+                            onClick={handleLogout} 
+                            className="text-red-500 text-sm font-bold ml-4 border border-red-100 px-3 py-1 rounded-md hover:bg-red-50 transition-colors"
+                        >
                             Logout ({username})
                         </button>
                     </>
                 ) : (
-                    <Link to="/login" className="bg-stone-800 text-white px-4 py-2 rounded-lg">Login</Link>
+                    <>
+                        <Link to="/login" className="bg-stone-800 text-white px-4 py-2 rounded-lg hover:bg-stone-700 transition-colors">
+                            Login
+                        </Link>
+                    </>
                 )}
             </div>
         </nav>

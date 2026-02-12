@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import toast from 'react-hot-toast';
+import ReaderStats from '../components/ReaderStats';
+
 
 const Profile = () => {
     const [userData, setUserData] = useState({ username: '', email: '', bio: '' });

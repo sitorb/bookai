@@ -43,3 +43,30 @@ def clear_search_history(request):
     """
     SearchHistory.objects.filter(user=request.user).delete()
     return Response({'message': 'History cleared successfully'}, status=status.HTTP_204_NO_CONTENT)
+
+
+from django.db.models import Count, Avg
+from library.models import Favorite
+from .models import SearchHistory
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def reader_analytics(request):
+    # 1. Top Moods searched
+    top_moods = SearchHistory.objects.filter(user=request.user)\
+        .values('detected_mood')\
+        .annotate(count=Count('detected_mood'))\
+        .order_by('-count')[:3]
+
+    # 2. Average Rating
+    avg_rating = Favorite.objects.filter(user=request.user)\
+        .aggregate(Avg('rating'))['rating__avg'] or 0
+
+    # 3. Total books saved
+    total_books = Favorite.objects.filter(user=request.user).count()
+
+    return Response({
+        'top_moods': top_moods,
+        'average_rating': round(avg_rating, 1),
+        'total_books': total_books
+    })

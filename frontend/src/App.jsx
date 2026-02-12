@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
+import Discovery from './pages/Discovery';
 
 // 1. Import Layout & Logic Components
 import Navbar from './components/Navbar';

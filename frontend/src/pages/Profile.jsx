@@ -1,114 +1,121 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getMoodRecommendations } from '../services/api';
+import axios from 'axios';
 import toast from 'react-hot-toast';
+import ReaderStats from '../components/ReaderStats'; // Ensure this component exists
 
-const Recommend = () => {
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [savedBookIds, setSavedBookIds] = useState(new Set());
-    const navigate = useNavigate();
+const Profile = () => {
+    // 1. All Hooks must be at the very top
+    const [userData, setUserData] = useState({ username: '', email: '', bio: '' });
+    const [history, setHistory] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const token = localStorage.getItem('token');
-        if (!token) navigate('/login');
-    }, [navigate]);
+        
+        const fetchProfileData = async () => {
+            try {
+                const [profileRes, historyRes] = await Promise.all([
+                    axios.get('http://127.0.0.1:8000/api/users/profile/', {
+                        headers: { 'Authorization': `Token ${token}` }
+                    }),
+                    axios.get('http://127.0.0.1:8000/api/users/history/', {
+                        headers: { 'Authorization': `Token ${token}` }
+                    })
+                ]);
+                setUserData(profileRes.data);
+                setHistory(historyRes.data);
+            } catch (err) {
+                toast.error("Session expired or server error");
+            } finally {
+                setLoading(false);
+            }
+        };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-        setLoading(true);
-        try {
-            const data = await getMoodRecommendations(query);
-            setResults(data.recommendations || []);
-            toast.success(`Mood: ${data.detected_mood}`, { icon: '✨' });
-        } catch (err) {
-            toast.error("The librarian is busy. Try again?");
-        } finally {
+        if (token) {
+            fetchProfileData();
+        } else {
             setLoading(false);
         }
-    };
+    }, []);
 
-    const handleToggleFavorite = async (bookId) => {
+    const handleClearHistory = async () => {
         const token = localStorage.getItem('token');
-        const isAdded = savedBookIds.has(bookId);
-        const endpoint = isAdded ? 'remove/' : 'add/';
-        
-        try {
-            const response = await fetch(`http://127.0.0.1:8000/api/library/${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Token ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ book_id: bookId })
-            });
+        if (!window.confirm("Permanent delete your mood history?")) return;
 
-            if (response.ok) {
-                const newSaved = new Set(savedBookIds);
-                isAdded ? newSaved.delete(bookId) : newSaved.add(bookId);
-                setSavedBookIds(newSaved);
-                toast.success(isAdded ? "Removed" : "Saved to Archive");
-            }
+        try {
+            await axios.delete('http://127.0.0.1:8000/api/users/history/clear/', {
+                headers: { 'Authorization': `Token ${token}` }
+            });
+            setHistory([]);
+            toast.success("History cleared");
         } catch (err) {
-            toast.error("Connection error.");
+            toast.error("Failed to clear history");
         }
     };
+
+    // 2. Conditional rendering happens AFTER all hooks are declared
+    if (loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-[#fcfaf8] font-serif italic text-stone-400">
+            Fetching your literary profile...
+        </div>
+    );
 
     return (
         <div className="min-h-screen bg-[#fcfaf8] pb-20">
-            {/* Hero Section */}
-            <div className="max-w-4xl mx-auto px-6 pt-20 pb-16 text-center">
-                <h1 className="text-6xl font-serif text-stone-900 mb-6 leading-tight">
-                    What should you <br /> read <span className="italic text-stone-400">tonight?</span>
-                </h1>
+            <div className="max-w-5xl mx-auto px-6 pt-16">
                 
-                <form onSubmit={handleSubmit} className="relative max-w-2xl mx-auto group">
-                    <textarea
-                        className="w-full p-8 rounded-3xl bg-white border border-stone-100 shadow-xl outline-none focus:ring-2 ring-stone-200 transition-all text-lg font-serif italic"
-                        rows="3"
-                        placeholder="I'm feeling adventurous but a bit lonely..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
-                    <button 
-                        type="submit" 
-                        disabled={loading}
-                        className="absolute bottom-4 right-4 bg-stone-900 text-white px-8 py-3 rounded-2xl font-bold hover:bg-stone-700 transition-all shadow-lg disabled:bg-stone-300"
-                    >
-                        {loading ? "Thinking..." : "Consult AI"}
-                    </button>
-                </form>
-            </div>
-
-            {/* Results Grid */}
-            <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 md:grid-cols-2 gap-10">
-                {results.map((book) => (
-                    <div key={book.id} className="bg-white rounded-[2rem] p-10 border border-stone-100 shadow-sm hover:shadow-md transition-shadow">
-                        <div className="flex justify-between items-start mb-6">
-                            <div className="flex-1">
-                                <h2 className="text-3xl font-serif text-stone-900 mb-2">{book.title}</h2>
-                                <p className="text-stone-400 uppercase tracking-[0.2em] text-[10px] font-black">
-                                    {book.author}
-                                </p>
-                            </div>
-                            <button 
-                                onClick={() => handleToggleFavorite(book.id)}
-                                className={`p-4 rounded-2xl transition-all ${
-                                    savedBookIds.has(book.id) ? 'bg-stone-900 text-white' : 'bg-stone-50 text-stone-400 hover:bg-stone-100'
-                                }`}
-                            >
-                                {savedBookIds.has(book.id) ? '✓' : '♥'}
-                            </button>
-                        </div>
-                        <p className="text-stone-600 leading-relaxed mb-8 italic">"{book.summary}"</p>
-                        <div className="h-[1px] w-full bg-stone-50"></div>
+                {/* Profile Header Card */}
+                <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-stone-100 mb-10 flex flex-col md:flex-row items-center gap-8">
+                    <div className="w-24 h-24 bg-stone-900 rounded-full flex items-center justify-center text-white text-4xl font-serif">
+                        {userData.username?.charAt(0).toUpperCase()}
                     </div>
-                ))}
+                    <div className="text-center md:text-left">
+                        <h1 className="text-4xl font-serif text-stone-900 mb-1">{userData.username}</h1>
+                        <p className="text-stone-400 mb-4">{userData.email}</p>
+                        <p className="text-stone-600 italic max-w-md">
+                            {userData.bio || "No bio set yet. Tell us about your reading style."}
+                        </p>
+                    </div>
+                </div>
+
+                {/* Statistics Component */}
+                <ReaderStats />
+
+                {/* Mood History Section */}
+                <div className="flex justify-between items-end mb-8 border-b border-stone-200 pb-4">
+                    <div>
+                        <h2 className="text-2xl font-serif text-stone-800">Recent Moods</h2>
+                        <p className="text-stone-400 text-sm italic">What you've been looking for lately.</p>
+                    </div>
+                    {history.length > 0 && (
+                        <button 
+                            onClick={handleClearHistory}
+                            className="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-500 transition-colors"
+                        >
+                            Clear Archive
+                        </button>
+                    )}
+                </div>
+
+                <div className="space-y-4">
+                    {history.length === 0 ? (
+                        <p className="text-stone-400 italic text-center py-10">No history found yet.</p>
+                    ) : (
+                        history.map((item, index) => (
+                            <div key={index} className="bg-white p-6 rounded-2xl border border-stone-100 flex justify-between items-center group hover:border-stone-300 transition-all">
+                                <span className="text-stone-700 font-serif">"{item.query}"</span>
+                                <div className="flex items-center gap-4">
+                                    <span className="px-3 py-1 bg-stone-50 text-stone-400 text-[10px] font-bold uppercase tracking-tighter rounded-full group-hover:bg-stone-900 group-hover:text-white transition-colors">
+                                        {item.detected_mood || item.mood}
+                                    </span>
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
             </div>
         </div>
     );
 };
 
-export default Recommend;
+export default Profile;

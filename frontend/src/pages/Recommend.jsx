@@ -1,111 +1,79 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getMoodRecommendations } from '../services/api';
-import toast from 'react-hot-toast';
+import React, { useState } from 'react';
+import axios from 'axios';
 
 const Recommend = () => {
-    // Hooks must be at the very top of the function
-    const [query, setQuery] = useState('');
-    const [results, setResults] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [mood, setMood] = useState('');
-    const [savedBookIds, setSavedBookIds] = useState(new Set());
-    const navigate = useNavigate();
+  const [mood, setMood] = useState('');
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-    // Protection logic inside the hook
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) {
-            navigate('/login');
-        }
-    }, [navigate]);
+  const handleRecommend = async () => {
+    if (!mood.trim()) return;
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!query.trim()) return;
-        setLoading(true);
-        try {
-            const data = await getMoodRecommendations(query);
-            setResults(data.recommendations || []);
-            setMood(data.detected_mood || '');
-            toast.success("Recommendations found!");
-        } catch (err) {
-            toast.error("Failed to get recommendations.");
-            console.error(err);
-        } finally {
-            setLoading(false);
-        }
-    };
+    setLoading(true);
+    setError(null);
+    setBooks([]);
 
-    const handleToggleFavorite = async (bookId) => {
-        const token = localStorage.getItem('token');
-        const isAdded = savedBookIds.has(bookId);
-        const endpoint = isAdded ? 'remove/' : 'add/';
-        
-        try {
-            const response = await fetch(`http://127.0.0.1:8000/api/library/${endpoint}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Token ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ book_id: bookId })
-            });
+    try {
+      // NOTE: Ensure this matches your Django URL (e.g., http://127.0.0.1:8000/api/recommend/)
+      const response = await axios.post('http://127.0.0.1:8000/api/recommend/', {
+        mood: mood
+      });
 
-            if (response.ok) {
-                const newSaved = new Set(savedBookIds);
-                if (isAdded) {
-                    newSaved.delete(bookId);
-                    toast("Removed from library", { icon: '🗑️' });
-                } else {
-                    newSaved.add(bookId);
-                    toast.success("Saved to library!");
-                }
-                setSavedBookIds(newSaved);
-            }
-        } catch (err) {
-            toast.error("Error updating favorites.");
-        }
-    };
+      setBooks(response.data);
+    } catch (err) {
+      console.error("Full Error Object:", err);
+      setError(err.response?.data?.error || "Failed to reach the AI Librarian. Check if Django is running.");
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="min-h-screen bg-stone-50 p-8">
-            <div className="max-w-4xl mx-auto">
-                <h1 className="text-4xl font-serif text-center mb-10">AI Librarian</h1>
-                <form onSubmit={handleSubmit} className="flex flex-col gap-4 mb-12">
-                    <textarea 
-                        className="p-4 rounded-xl border-2 border-stone-200 focus:border-stone-800 outline-none shadow-sm"
-                        placeholder="Describe your mood..."
-                        value={query}
-                        onChange={(e) => setQuery(e.target.value)}
-                    />
-                    <button type="submit" disabled={loading} className="bg-stone-800 text-white py-3 px-8 rounded-full font-bold self-center">
-                        {loading ? "Searching..." : "Recommend Books"}
-                    </button>
-                </form>
+  return (
+    <div style={{ padding: '40px', maxWidth: '800px', margin: '0 auto', textAlign: 'center' }}>
+      <h1>AI Librarian</h1>
+      <p>Tell me how you feel, and I'll find a book from our library of 766 titles.</p>
+      
+      <textarea
+        value={mood}
+        onChange={(e) => setMood(e.target.value)}
+        placeholder="e.g., I feel lonely and want a story about a long journey..."
+        style={{ width: '100%', height: '100px', padding: '10px', borderRadius: '8px', border: '1px solid #ccc' }}
+      />
+      
+      <br />
+      
+      <button 
+        onClick={handleRecommend}
+        disabled={loading}
+        style={{
+          marginTop: '20px',
+          padding: '10px 30px',
+          backgroundColor: loading ? '#ccc' : '#007bff',
+          color: 'white',
+          border: 'none',
+          borderRadius: '20px',
+          cursor: 'pointer'
+        }}
+      >
+        {loading ? 'Consulting the Archives...' : 'Recommend Books'}
+      </button>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    {results.map((book) => (
-                        <div key={book.id} className="bg-white p-6 rounded-2xl shadow-lg border border-stone-100 flex flex-col justify-between">
-                            <div>
-                                <h2 className="text-xl font-bold mb-2">{book.title}</h2>
-                                <p className="text-stone-500 mb-4 italic">by {book.author}</p>
-                                <p className="text-stone-600 mb-6 line-clamp-3">{book.summary}</p>
-                            </div>
-                            <button 
-                                onClick={() => handleToggleFavorite(book.id)}
-                                className={`w-full py-2 rounded-lg font-bold border-2 transition-all ${
-                                    savedBookIds.has(book.id) ? "bg-stone-800 text-white border-stone-800" : "border-stone-800 text-stone-800"
-                                }`}
-                            >
-                                {savedBookIds.has(book.id) ? "In Collection" : "Save to Library"}
-                            </button>
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
+      {error && <p style={{ color: 'red', marginTop: '20px' }}>⚠️ {error}</p>}
+
+      <div style={{ marginTop: '40px', display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        {books.map((book) => (
+          <div key={book.id} style={{ border: '1px solid #eee', padding: '15px', borderRadius: '8px', textAlign: 'left' }}>
+            <h3>{book.title}</h3>
+            <p><strong>Author:</strong> {book.author}</p>
+            <p style={{ fontSize: '0.9rem', color: '#555' }}>
+              {book.summary.substring(0, 150)}...
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 };
 
 export default Recommend;

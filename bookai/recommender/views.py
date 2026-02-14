@@ -39,3 +39,4 @@ class RecommendBookView(APIView):
             "detected_mood": target_mood,
             "recommendations": serializer.data
         })
+    

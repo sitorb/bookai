@@ -13,3 +13,11 @@ class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
         fields = ['id', 'title', 'author', 'summary', 'moods']
+from rest_framework import serializers
+from .models import Book
+
+class BookSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Book
+        # Only use fields that actually exist in your models.py
+        fields = ['id', 'title', 'author', 'summary']

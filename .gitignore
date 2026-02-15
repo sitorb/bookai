@@ -16,3 +16,5 @@ node_modules/
 .idea/
 .vscode/
 bookai/data/*.json
+
+bookai/book_embeddings.pkl

@@ -1,121 +1,62 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import toast from 'react-hot-toast';
-import ReaderStats from '../components/ReaderStats'; // Ensure this component exists
 
 const Profile = () => {
-    // 1. All Hooks must be at the very top
-    const [userData, setUserData] = useState({ username: '', email: '', bio: '' });
-    const [history, setHistory] = useState([]);
-    const [loading, setLoading] = useState(true);
+  const [data, setData] = useState({
+    username: "Autumn Voyager",
+    bio: "Searching for stories that feel like crisp leaves and warm tea.",
+    volumes: 5000,
+    taste_score: "98% Gold",
+    dna: "Autumn Soul",
+    history: []
+  });
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        
-        const fetchProfileData = async () => {
-            try {
-                const [profileRes, historyRes] = await Promise.all([
-                    axios.get('http://127.0.0.1:8000/api/users/profile/', {
-                        headers: { 'Authorization': `Token ${token}` }
-                    }),
-                    axios.get('http://127.0.0.1:8000/api/users/history/', {
-                        headers: { 'Authorization': `Token ${token}` }
-                    })
-                ]);
-                setUserData(profileRes.data);
-                setHistory(historyRes.data);
-            } catch (err) {
-                toast.error("Session expired or server error");
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    axios.get('http://127.0.0.1:8000/api/users/analytics/')
+      .then(res => setData(prev => ({ ...prev, ...res.data })))
+      .catch(() => console.log("Using local parchment data"));
+  }, []);
 
-        if (token) {
-            fetchProfileData();
-        } else {
-            setLoading(false);
-        }
-    }, []);
+  const stats = [
+    { label: "Collection", value: `${data.volumes} Volumes`, color: "bg-[#f4e4d4]" },
+    { label: "Taste Score", value: data.taste_score, color: "bg-[#e8ece0]" },
+    { label: "Reader DNA", value: data.dna, color: "bg-[#faedcd]" }
+  ];
 
-    const handleClearHistory = async () => {
-        const token = localStorage.getItem('token');
-        if (!window.confirm("Permanent delete your mood history?")) return;
-
-        try {
-            await axios.delete('http://127.0.0.1:8000/api/users/history/clear/', {
-                headers: { 'Authorization': `Token ${token}` }
-            });
-            setHistory([]);
-            toast.success("History cleared");
-        } catch (err) {
-            toast.error("Failed to clear history");
-        }
-    };
-
-    // 2. Conditional rendering happens AFTER all hooks are declared
-    if (loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-[#fcfaf8] font-serif italic text-stone-400">
-            Fetching your literary profile...
+  return (
+    <div className="min-h-screen bg-[#fdfaf5] py-16 px-4 font-serif text-[#432818]">
+      <div className="max-w-3xl mx-auto">
+        <div className="text-center mb-16">
+          <div className="w-28 h-28 bg-[#7f5539] rounded-full mx-auto mb-6 flex items-center justify-center text-4xl text-[#fdfaf5] shadow-2xl border-4 border-[#ede0d4]">
+            {data.username[0]}
+          </div>
+          <h2 className="text-4xl font-light mb-3 tracking-tight">{data.username}</h2>
+          <p className="text-[#9c6644] italic px-12 leading-relaxed">“{data.bio}”</p>
         </div>
-    );
 
-    return (
-        <div className="min-h-screen bg-[#fcfaf8] pb-20">
-            <div className="max-w-5xl mx-auto px-6 pt-16">
-                
-                {/* Profile Header Card */}
-                <div className="bg-white rounded-[2.5rem] p-10 shadow-sm border border-stone-100 mb-10 flex flex-col md:flex-row items-center gap-8">
-                    <div className="w-24 h-24 bg-stone-900 rounded-full flex items-center justify-center text-white text-4xl font-serif">
-                        {userData.username?.charAt(0).toUpperCase()}
-                    </div>
-                    <div className="text-center md:text-left">
-                        <h1 className="text-4xl font-serif text-stone-900 mb-1">{userData.username}</h1>
-                        <p className="text-stone-400 mb-4">{userData.email}</p>
-                        <p className="text-stone-600 italic max-w-md">
-                            {userData.bio || "No bio set yet. Tell us about your reading style."}
-                        </p>
-                    </div>
-                </div>
-
-                {/* Statistics Component */}
-                <ReaderStats />
-
-                {/* Mood History Section */}
-                <div className="flex justify-between items-end mb-8 border-b border-stone-200 pb-4">
-                    <div>
-                        <h2 className="text-2xl font-serif text-stone-800">Recent Moods</h2>
-                        <p className="text-stone-400 text-sm italic">What you've been looking for lately.</p>
-                    </div>
-                    {history.length > 0 && (
-                        <button 
-                            onClick={handleClearHistory}
-                            className="text-[10px] font-black uppercase tracking-widest text-red-300 hover:text-red-500 transition-colors"
-                        >
-                            Clear Archive
-                        </button>
-                    )}
-                </div>
-
-                <div className="space-y-4">
-                    {history.length === 0 ? (
-                        <p className="text-stone-400 italic text-center py-10">No history found yet.</p>
-                    ) : (
-                        history.map((item, index) => (
-                            <div key={index} className="bg-white p-6 rounded-2xl border border-stone-100 flex justify-between items-center group hover:border-stone-300 transition-all">
-                                <span className="text-stone-700 font-serif">"{item.query}"</span>
-                                <div className="flex items-center gap-4">
-                                    <span className="px-3 py-1 bg-stone-50 text-stone-400 text-[10px] font-bold uppercase tracking-tighter rounded-full group-hover:bg-stone-900 group-hover:text-white transition-colors">
-                                        {item.detected_mood || item.mood}
-                                    </span>
-                                </div>
-                            </div>
-                        ))
-                    )}
-                </div>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+          {stats.map((stat, i) => (
+            <div key={i} className={`${stat.color} p-10 rounded-[2rem] text-center border border-[#ddb892]/20 shadow-sm transition-all hover:shadow-md`}>
+              <p className="text-[10px] uppercase tracking-[0.3em] text-[#7f5539] mb-3 font-bold opacity-70">{stat.label}</p>
+              <p className="text-xl font-bold">{stat.value}</p>
             </div>
+          ))}
         </div>
-    );
+
+        <div className="bg-white/40 backdrop-blur-sm rounded-[3rem] p-12 border border-[#ede0d4] shadow-inner">
+          <h3 className="text-xl text-[#7f5539] mb-8 border-b border-[#f4e4d4] pb-6 flex justify-between items-center italic">
+            <span>Recent Chronologies</span>
+            <span className="text-[10px] uppercase tracking-widest opacity-40 font-sans font-bold">Archives</span>
+          </h3>
+          
+          <div className="py-12 text-center">
+            <div className="text-5xl mb-6 opacity-10 italic">📖</div>
+            <p className="text-[#b08968] italic font-light">Your literary journey is being transcribed into the permanent record...</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
 };
 
 export default Profile;

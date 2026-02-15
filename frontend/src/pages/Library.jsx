@@ -1,85 +1,51 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { getFavorites, removeFavorite } from '../services/api';
-import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const Library = () => {
-    const [favorites, setFavorites] = useState([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterRating, setFilterRating] = useState(0);
-    const navigate = useNavigate();
+  const [books, setBooks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-    useEffect(() => {
-        const token = localStorage.getItem('token');
-        if (!token) return navigate('/login');
+  useEffect(() => {
+    axios.get('http://127.0.0.1:8000/api/recommend/')
+      .then(res => setBooks(res.data.slice(0, 12)))
+      .catch(() => console.log("Archive access limited"))
+      .finally(() => setLoading(false));
+  }, []);
 
-        let url = `http://127.0.0.1:8000/api/library/?search=${searchTerm}`;
-        if (filterRating > 0) url += `&rating=${filterRating}`;
+  return (
+    <div className="min-h-screen bg-[#fdfaf5] py-16 px-6 font-serif">
+      <div className="max-w-6xl mx-auto">
+        <header className="mb-16 border-b border-[#ede0d4] pb-8 flex justify-between items-end">
+          <div>
+            <h1 className="text-4xl text-[#432818] font-light italic">The Grand Archives</h1>
+            <p className="text-[#9c6644] mt-2 font-sans text-sm tracking-wide">Curating 5,000 volumes of human experience.</p>
+          </div>
+          <div className="hidden md:block text-right">
+            <span className="text-[10px] tracking-[0.3em] uppercase text-[#b08968] font-bold">Established</span>
+            <p className="text-[#432818] font-sans">MMXXIV</p>
+          </div>
+        </header>
 
-        fetch(url, { headers: { 'Authorization': `Token ${token}` } })
-            .then(res => res.json())
-            .then(data => setFavorites(data));
-    }, [searchTerm, filterRating, navigate]);
-
-    return (
-        <div className="min-h-screen bg-[#fcfaf8] pb-20">
-            {/* Elegant Header */}
-            <div className="max-w-6xl mx-auto px-6 pt-16 pb-12">
-                <h1 className="text-5xl font-serif text-stone-900 mb-4">My Archive</h1>
-                <p className="text-stone-500 italic mb-8">A curated collection of your literary journey.</p>
-
-                {/* Professional Filter Bar */}
-                <div className="flex flex-col md:flex-row gap-4 items-center bg-white p-2 rounded-2xl shadow-sm border border-stone-100">
-                    <div className="relative flex-grow w-full">
-                        <span className="absolute left-4 top-3 text-stone-400">🔍</span>
-                        <input 
-                            type="text"
-                            placeholder="Search by title or author..."
-                            className="w-full pl-10 pr-4 py-2 bg-transparent outline-none text-stone-800"
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                        />
-                    </div>
-                    <select 
-                        className="bg-stone-50 px-4 py-2 rounded-xl text-stone-600 font-medium outline-none border-none cursor-pointer"
-                        onChange={(e) => setFilterRating(Number(e.target.value))}
-                    >
-                        <option value="0">All Ratings</option>
-                        <option value="5">⭐⭐⭐⭐⭐</option>
-                        <option value="4">⭐⭐⭐⭐ & Up</option>
-                    </select>
+        {loading ? (
+           <div className="flex justify-center py-40">
+             <div className="animate-pulse text-[#7f5539] italic tracking-[0.2em]">Opening the vaults...</div>
+           </div>
+        ) : (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-12">
+            {books.map((book) => (
+              <div key={book.id} className="group cursor-pointer">
+                <div className="aspect-[2/3] bg-[#ede0d4] rounded-sm shadow-md transition-all group-hover:shadow-2xl group-hover:-translate-y-2 border-r-4 border-[#ddb892] flex flex-col justify-end p-6 overflow-hidden relative">
+                   <div className="absolute top-0 left-4 w-1 h-full bg-black/5" />
+                   <h4 className="text-xl font-bold leading-tight text-[#432818] z-10">{book.title}</h4>
+                   <p className="text-xs text-[#7f5539] mt-3 z-10 font-sans tracking-wide uppercase font-bold opacity-60">{book.author}</p>
                 </div>
-            </div>
-
-            {/* Book Grid */}
-            <div className="max-w-6xl mx-auto px-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-10">
-                {favorites.map((book) => (
-                    <div key={book.id} className="group bg-white rounded-3xl p-8 border border-stone-100 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between">
-                        <div>
-                            <div className="w-12 h-1 bg-stone-200 mb-6 group-hover:w-20 transition-all duration-500"></div>
-                            <h3 className="text-2xl font-serif text-stone-900 mb-1 leading-tight">{book.title}</h3>
-                            <p className="text-stone-400 uppercase tracking-widest text-[10px] font-bold mb-6">by {book.author}</p>
-                            
-                            <div className="flex gap-1 mb-8">
-                                {[1, 2, 3, 4, 5].map((star) => (
-                                    <span key={star} className={`text-lg ${star <= book.rating ? 'text-yellow-400' : 'text-stone-100'}`}>★</span>
-                                ))}
-                            </div>
-                        </div>
-                        
-                        <div className="flex justify-between items-center pt-6 border-t border-stone-50">
-                            <button className="text-stone-400 hover:text-stone-900 text-xs font-bold uppercase tracking-tighter transition-colors">Details</button>
-                            <button 
-                                onClick={() => removeFavorite(book.id)}
-                                className="w-8 h-8 flex items-center justify-center rounded-full bg-stone-50 text-stone-300 hover:bg-red-50 hover:text-red-400 transition-all"
-                            >
-                                ✕
-                            </button>
-                        </div>
-                    </div>
-                ))}
-            </div>
-        </div>
-    );
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    </div>
+  );
 };
 
 export default Library;

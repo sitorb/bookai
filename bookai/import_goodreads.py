@@ -1,100 +1,68 @@
-import json
 import os
-import django
-from django.db import transaction, IntegrityError
+import pickle
+import re
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics.pairwise import cosine_similarity
+from django.db.models import Case, When
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bookai.settings')
-django.setup()
-
-from books.models import Book, Mood
-
-MOOD_MAP = {
-    'Melancholic': ['sad', 'tragedy', 'loss', 'death', 'lonely', 'nostalgia', 'dark', 'depressing', 'grief'],
-    'Inspiring': ['hope', 'dream', 'success', 'growth', 'motivation', 'triumph', 'inspiring'],
-    'Cozy': ['warm', 'sweet', 'home', 'family', 'gentle', 'peaceful', 'comfort', 'bakery'],
-    'Intellectual': ['philosophy', 'science', 'complex', 'theory', 'history', 'psychology'],
-    'Adventurous': ['journey', 'quest', 'exploration', 'action', 'mystery', 'wild', 'magic']
-}
-
-def get_mood_ids(text, mood_objs):
+def clean_text(text):
+    if not text: return ""
     text = text.lower()
-    return [mood_objs[m].id for m in MOOD_MAP if any(word in text for word in MOOD_MAP[m])]
+    text = re.sub(r'[^a-zа-яё\s]', '', text)
+    return text
 
-def import_all_books(file_path, limit=10000):
-    print(f"🚀 Начинаем безопасный импорт...")
+def generate_embeddings():
+    from books.models import Book
+    print("🧠 Создаем поисковый индекс (без Torch)...")
     
-    mood_objs = {m.name: m for m in Mood.objects.all()}
-    if not mood_objs:
-        print("❌ Сначала создайте Moods через seed_books.py!")
-        return
+    books = Book.objects.all()
+    if not books.exists(): return "No books."
 
-    books_to_create = []
+    # Собираем данные: Название + Описание + Настроения
+    texts = []
+    ids = []
+    for b in books.iterator():
+        moods = " ".join([m.name for m in b.moods.all()])
+        # Даем настроениям больше веса, повторяя их
+        texts.append(clean_text(f"{b.title} {b.summary} {moods} {moods}"))
+        ids.append(b.id)
+
+    # Используем TF-IDF + LSA (SVD) для понимания смысла
+    vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), max_features=15000)
+    matrix = vectorizer.fit_transform(texts)
+
+    # Сжимаем матрицу до 200 "смысловых концептов"
+    svd = TruncatedSVD(n_components=min(200, matrix.shape[1]-1))
+    concept_matrix = svd.fit_transform(matrix)
+
+    data = {'vectorizer': vectorizer, 'svd': svd, 'matrix': concept_matrix, 'ids': ids}
     
-    with open(file_path, 'r', encoding='utf-8') as f:
-        for i, line in enumerate(f):
-            if i >= limit: break
-            
-            try:
-                data = json.loads(line)
-                
-                # Тщательная очистка данных для предотвращения ошибок БД
-                title = str(data.get('title', 'Unknown'))[:254]
-                summary = data.get('description', '')
-                if not summary or len(summary) < 20: continue
+    with open('book_embeddings.pkl', 'wb') as f:
+        pickle.dump(data, f)
+    
+    return f"Готово! Индекс создан для {len(ids)} книг."
 
-                author_data = data.get('authors', [])
-                author_name = "Unknown"
-                if author_data:
-                    author_name = str(author_data[0].get('name', 'Unknown'))[:254]
+def get_recommendations(user_query, top_n=10):
+    from books.models import Book
+    
+    path = 'book_embeddings.pkl'
+    if not os.path.exists(path): return Book.objects.all()[:top_n]
 
-                year = data.get('publication_year')
-                try:
-                    year = int(year) if year else None
-                except ValueError:
-                    year = None
+    with open(path, 'rb') as f:
+        data = pickle.load(f)
 
-                book_obj = Book(
-                    title=title,
-                    author=author_name,
-                    summary=summary,
-                    publication_year=year
-                )
-                books_to_create.append(book_obj)
+    # Превращаем запрос в вектор того же пространства
+    query_vec = data['vectorizer'].transform([clean_text(user_query)])
+    query_concept = data['svd'].transform(query_vec)
 
-                # Сохраняем пачками по 500 для стабильности
-                if len(books_to_create) >= 500:
-                    save_batch(books_to_create, mood_objs)
-                    books_to_create = []
-                    print(f"✅ Обработано {i+1} строк...")
+    # Считаем сходство
+    sims = cosine_similarity(query_concept, data['matrix'])[0]
+    
+    # Берем лучшие индексы
+    top_indices = np.argsort(sims)[::-1][:top_n]
+    recommended_ids = [data['ids'][i] for i in top_indices]
 
-            except Exception as e:
-                # Ошибка в одной строке JSON не сломает весь скрипт
-                continue
-
-        # Сохраняер остаток
-        if books_to_create:
-            save_batch(books_to_create, mood_objs)
-
-    print(f"🏁 Готово! Книг в базе: {Book.objects.count()}")
-
-def save_batch(batch, mood_objs):
-    """ Сохраняет пачку книг и их настроения в отдельной транзакции """
-    try:
-        with transaction.atomic():
-            created_books = Book.objects.bulk_create(batch)
-            
-            links = []
-            for b in created_books:
-                m_ids = get_mood_ids(f"{b.title} {b.summary}", mood_objs)
-                for mid in m_ids:
-                    links.append(Book.moods.through(book_id=b.id, mood_id=mid))
-            
-            if links:
-                Book.moods.through.objects.bulk_create(links, ignore_conflicts=True)
-    except Exception as e:
-        print(f"⚠️ Пропущена пачка из-за ошибки: {e}")
-
-if __name__ == '__main__':
-    # Убедись, что путь к файлу верный
-    path = os.path.join('data', 'goodreads_books.json')
-    import_all_books(path)
+    preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(recommended_ids)])
+    return Book.objects.filter(id__in=recommended_ids).order_by(preserved)

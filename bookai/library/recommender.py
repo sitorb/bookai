@@ -1,64 +1,81 @@
 import os
 import pickle
-import torch
-from sentence_transformers import SentenceTransformer, util
-from books.models import Book
+import re
+import numpy as np
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
+from sklearn.metrics.pairwise import cosine_similarity
+from django.db.models import Case, When
 
-# Загружаем модель (сделает это один раз при запуске)
-model = SentenceTransformer('all-MiniLM-L6-v2')
+def clean_text(text):
+    if not text: return ""
+    text = text.lower()
+    # Очистка текста: оставляем только буквы (латиница и кириллица)
+    text = re.sub(r'[^a-zа-яё\s]', '', text)
+    return text
 
 def generate_embeddings():
-    """ Создает 'смысловые отпечатки' для всех книг в базе """
     from books.models import Book
+    print("🧠 Создаем поисковый индекс (LSA)...")
     
     books = Book.objects.all()
     if not books.exists():
-        return "No books found."
+        return "В базе нет книг для анализа."
 
-    # Собираем тексты: Название + Описание
-    # Мы не чистим текст сильно, так как BERT понимает знаки препинания и контекст
-    book_texts = [f"{b.title}. {b.summary}" for b in books]
-    book_ids = [b.id for b in books]
-
-    print(f"🧠 AI анализирует {len(book_texts)} книг... это может занять минуту.")
+    texts = []
+    ids = []
     
-    # Превращаем тексты в векторы (эмбеддинги)
-    embeddings = model.encode(book_texts, convert_to_tensor=True)
+    # Используем итератор для экономии памяти при 10к книг
+    for b in books.iterator():
+        mood_tags = " ".join([m.name for m in b.moods.all()])
+        # Комбинируем данные, усиливая значимость настроений
+        combined = f"{b.title} {b.summary} {mood_tags} {mood_tags}"
+        texts.append(clean_text(combined))
+        ids.append(b.id)
+
+    # Векторизация TF-IDF
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=15000, ngram_range=(1, 2))
+    tfidf_matrix = vectorizer.fit_transform(texts)
+
+    # Сжатие смыслов (SVD) — это позволяет AI понимать контекст без нейросетей
+    svd = TruncatedSVD(n_components=min(200, tfidf_matrix.shape[1] - 1))
+    concept_matrix = svd.fit_transform(tfidf_matrix)
 
     data = {
-        'embeddings': embeddings,
-        'ids': book_ids
+        'vectorizer': vectorizer,
+        'svd': svd,
+        'matrix': concept_matrix,
+        'ids': ids
     }
 
-    with open('book_embeddings_bert.pkl', 'wb') as f:
+    # Сохраняем индекс в файл
+    with open('book_embeddings.pkl', 'wb') as f:
         pickle.dump(data, f)
     
-    return "BERT embeddings generated successfully!"
+    return f"Успех! Индекс создан для {len(ids)} книг."
 
-def get_recommendations(user_query, top_n=5):
-    """ Ищет книги по смыслу запроса, а не по словам """
+def get_recommendations(user_query, top_n=10):
     from books.models import Book
-    from django.db.models import Case, When
-
-    if not os.path.exists('book_embeddings_bert.pkl'):
+    
+    file_path = 'book_embeddings.pkl'
+    if not os.path.exists(file_path):
         return Book.objects.all()[:top_n]
 
-    with open('book_embeddings_bert.pkl', 'rb') as f:
+    with open(file_path, 'rb') as f:
         data = pickle.load(f)
 
-    # 1. Кодируем запрос пользователя в такой же вектор
-    query_embedding = model.encode(user_query, convert_to_tensor=True)
+    # Обработка запроса пользователя
+    query_clean = clean_text(user_query)
+    query_vec = data['vectorizer'].transform([query_clean])
+    query_concept = data['svd'].transform(query_vec)
 
-    # 2. Считаем косинусное сходство между запросом и всеми книгами
-    # util.cos_sim вернет оценку от 0 до 1 для каждой книги
-    cosine_scores = util.cos_sim(query_embedding, data['embeddings'])[0]
-
-    # 3. Берем топ-N результатов
-    top_results = torch.topk(cosine_scores, k=min(top_n, len(data['ids'])))
+    # Расчет косинусного сходства
+    similarities = cosine_similarity(query_concept, data['matrix'])[0]
     
-    indices = top_results.indices.tolist()
-    recommended_ids = [data['ids'][i] for i in indices]
+    # Сортировка по релевантности
+    top_indices = np.argsort(similarities)[::-1][:top_n]
+    recommended_ids = [data['ids'][i] for i in top_indices]
 
-    # 4. Возвращаем книги с сохранением порядка релевантности
+    # Возвращаем QuerySet с сохранением порядка AI-сортировки
     preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(recommended_ids)])
     return Book.objects.filter(id__in=recommended_ids).order_by(preserved)

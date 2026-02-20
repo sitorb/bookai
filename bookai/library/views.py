@@ -2,7 +2,7 @@ from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import IsAuthenticated, AllowAny
 from rest_framework.response import Response
 from rest_framework import status
-
+from .recommender import get_recommendations
 from .models import Favorite
 from books.models import Book
 
@@ -81,4 +81,38 @@ def community_feed(request):
         'author': fav.book.author,
         'time_ago': "Just now"
     } for fav in recent_saves]
+    return Response(data)
+
+
+# Добавь этот импорт в начало файла к остальным
+from .recommender import get_recommendations 
+
+# ... твой существующий код (add_to_favorites, rate_book и т.д.) ...
+
+@api_view(['POST'])
+@permission_classes([AllowAny]) # Разрешаем всем, чтобы было проще тестировать
+def recommend_books(request):
+    # Получаем запрос из React (searchTerm)
+    query = request.data.get('query', '')
+    print(f"DEBUG: Получен запрос от пользователя: {query}") # Увидишь в терминале
+    
+    if not query:
+        return Response([], status=status.HTTP_200_OK)
+
+    # Вызываем AI логику из recommender.py
+    recommended_queryset = get_recommendations(query)
+    
+    # Формируем данные для фронтенда
+    data = [
+        {
+            "id": book.id,
+            "title": book.title,
+            "author": book.author,
+            "summary": book.description, # Убедись, что поле в модели называется так
+            "cover_image": book.image_url if hasattr(book, 'image_url') else None,
+        }
+        for book in recommended_queryset
+    ]
+    
+    print(f"DEBUG: Отправляем в React {len(data)} книг")
     return Response(data)

@@ -1,23 +1,7 @@
-# books/serializers.py
-from rest_framework import serializers
-from .models import Book, Mood
-
-class MoodSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Mood
-        fields = ['name', 'description']
-
-class BookSerializer(serializers.ModelSerializer):
-    moods = MoodSerializer(many=True, read_only=True)
-
-    class Meta:
-        model = Book
-        fields = ['id', 'title', 'author', 'summary', 'moods']
 from rest_framework import serializers
 from .models import Book
 
 class BookSerializer(serializers.ModelSerializer):
     class Meta:
         model = Book
-        # Only use fields that actually exist in your models.py
-        fields = ['id', 'title', 'author', 'summary']
+        fields = ['id', 'title', 'author', 'summary', 'cover_image'] # проверьте поля в вашей модели!

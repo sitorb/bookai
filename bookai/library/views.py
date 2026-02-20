@@ -85,34 +85,22 @@ def community_feed(request):
 
 
 # Добавь этот импорт в начало файла к остальным
-from .recommender import get_recommendations 
-
-# ... твой существующий код (add_to_favorites, rate_book и т.д.) ...
-
 @api_view(['POST'])
-@permission_classes([AllowAny]) # Разрешаем всем, чтобы было проще тестировать
+@permission_classes([AllowAny]) # Временно разрешаем всем для теста
 def recommend_books(request):
-    # Получаем запрос из React (searchTerm)
     query = request.data.get('query', '')
-    print(f"DEBUG: Получен запрос от пользователя: {query}") # Увидишь в терминале
-    
     if not query:
-        return Response([], status=status.HTTP_200_OK)
+        return Response([])
 
-    # Вызываем AI логику из recommender.py
-    recommended_queryset = get_recommendations(query)
+    from .recommender import get_recommendations
+    books_queryset = get_recommendations(query)
     
-    # Формируем данные для фронтенда
     data = [
         {
-            "id": book.id,
-            "title": book.title,
-            "author": book.author,
-            "summary": book.description, # Убедись, что поле в модели называется так
-            "cover_image": book.image_url if hasattr(book, 'image_url') else None,
-        }
-        for book in recommended_queryset
+            "id": b.id,
+            "title": b.title,
+            "author": b.author,
+            "summary": b.description,
+        } for b in books_queryset
     ]
-    
-    print(f"DEBUG: Отправляем в React {len(data)} книг")
     return Response(data)

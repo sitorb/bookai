@@ -1,68 +1,65 @@
+import json
 import os
-import pickle
-import re
-import numpy as np
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import TruncatedSVD
-from sklearn.metrics.pairwise import cosine_similarity
-from django.db.models import Case, When
+import django
+from django.db import transaction
 
-def clean_text(text):
-    if not text: return ""
-    text = text.lower()
-    text = re.sub(r'[^a-zа-яё\s]', '', text)
-    return text
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'bookai.settings')
+django.setup()
 
-def generate_embeddings():
-    from books.models import Book
-    print("🧠 Создаем поисковый индекс (без Torch)...")
+from books.models import Book
+
+def import_books(file_path):
+    print("📦 Начинаю импорт обложек и описаний...")
+    books_to_create = []
     
-    books = Book.objects.all()
-    if not books.exists(): return "No books."
+    # Чтобы не плодить дубликаты
+    existing_titles = set(Book.objects.values_list('title', flat=True))
 
-    # Собираем данные: Название + Описание + Настроения
-    texts = []
-    ids = []
-    for b in books.iterator():
-        moods = " ".join([m.name for m in b.moods.all()])
-        # Даем настроениям больше веса, повторяя их
-        texts.append(clean_text(f"{b.title} {b.summary} {moods} {moods}"))
-        ids.append(b.id)
+    with open(file_path, 'r', encoding='utf-8') as f:
+        for i, line in enumerate(f):
+            try:
+                data = json.loads(line)
+                title = data.get('title', 'Unknown')
 
-    # Используем TF-IDF + LSA (SVD) для понимания смысла
-    vectorizer = TfidfVectorizer(stop_words='english', ngram_range=(1, 2), max_features=15000)
-    matrix = vectorizer.fit_transform(texts)
+                if not title or title in existing_titles:
+                    continue
 
-    # Сжимаем матрицу до 200 "смысловых концептов"
-    svd = TruncatedSVD(n_components=min(200, matrix.shape[1]-1))
-    concept_matrix = svd.fit_transform(matrix)
+                # БЕЗОПАСНОЕ извлечение автора
+                authors_list = data.get('authors', [])
+                if authors_list and len(authors_list) > 0:
+                    author_name = authors_list[0].get('name', 'Unknown')
+                else:
+                    author_name = 'Unknown'
 
-    data = {'vectorizer': vectorizer, 'svd': svd, 'matrix': concept_matrix, 'ids': ids}
-    
-    with open('book_embeddings.pkl', 'wb') as f:
-        pickle.dump(data, f)
-    
-    return f"Готово! Индекс создан для {len(ids)} книг."
+                # Безопасное извлечение картинки
+                img = data.get('image_url') or data.get('url')
+                if img and ('nophoto' in img or not img.startswith('http')):
+                    img = None
 
-def get_recommendations(user_query, top_n=10):
-    from books.models import Book
-    
-    path = 'book_embeddings.pkl'
-    if not os.path.exists(path): return Book.objects.all()[:top_n]
+                book = Book(
+                    title=str(title)[:255],
+                    author=str(author_name)[:255],
+                    summary=data.get('description', 'No description available.'),
+                    publication_year=int(data.get('publication_year')) if data.get('publication_year') else None,
+                    image_url=img
+                )
+                books_to_create.append(book)
 
-    with open(path, 'rb') as f:
-        data = pickle.load(f)
+                # Сохраняем пачками
+                if len(books_to_create) >= 1000:
+                    Book.objects.bulk_create(books_to_create)
+                    books_to_create = []
+                    print(f"✅ Обработано строк: {i+1}...")
 
-    # Превращаем запрос в вектор того же пространства
-    query_vec = data['vectorizer'].transform([clean_text(user_query)])
-    query_concept = data['svd'].transform(query_vec)
+            except Exception as e:
+                print(f"⚠️ Ошибка в строке {i}: {e}")
+                continue
 
-    # Считаем сходство
-    sims = cosine_similarity(query_concept, data['matrix'])[0]
-    
-    # Берем лучшие индексы
-    top_indices = np.argsort(sims)[::-1][:top_n]
-    recommended_ids = [data['ids'][i] for i in top_indices]
+        # Дозаписываем остатки
+        if books_to_create:
+            Book.objects.bulk_create(books_to_create)
 
-    preserved = Case(*[When(pk=pk, then=pos) for pos, pk in enumerate(recommended_ids)])
-    return Book.objects.filter(id__in=recommended_ids).order_by(preserved)
+    print(f"🏁 Готово! Теперь в базе {Book.objects.count()} книг.")
+
+if __name__ == '__main__':
+    import_books('data/goodreads_books.json')

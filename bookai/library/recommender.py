@@ -16,6 +16,43 @@ def clean_text(text):
     return " ".join(text.split()[:70])
 
 def generate_embeddings():
+    from books.models import Book
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from sklearn.decomposition import TruncatedSVD
+
+    # ОГРАНИЧЕНИЕ: Берем первые 50,000 книг, чтобы не сжечь RAM
+    # 2.3 миллиона — это слишком много для локальной обработки за один раз
+    print("🧠 Подготовка к обучению на 50,000 томах...")
+    
+    queryset = Book.objects.only('id', 'title', 'summary').prefetch_related('moods')[:50000]
+    
+    ids = []
+    texts = []
+    
+    for b in queryset:
+        mood_tags = " ".join([m.name for m in b.moods.all()])
+        content = f"{mood_tags} {b.title} {(b.summary or '')[:300]}"
+        texts.append(clean_text(content))
+        ids.append(b.id)
+        
+    if not texts: return "Библиотека пуста."
+
+    # Настройки для экономии памяти
+    vectorizer = TfidfVectorizer(stop_words='english', max_features=3000)
+    tfidf_matrix = vectorizer.fit_transform(texts).astype(np.float32)
+    
+    del texts
+    gc.collect()
+
+    svd = TruncatedSVD(n_components=100, random_state=42)
+    concept_matrix = svd.fit_transform(tfidf_matrix).astype(np.float32)
+
+    data = {'vectorizer': vectorizer, 'svd': svd, 'matrix': concept_matrix, 'ids': ids}
+
+    with open('book_embeddings.pkl', 'wb') as f:
+        pickle.dump(data, f)
+    
+    return f"Успех! AI обучен на 50,000 книгах из {Book.objects.count()} доступных."
     """ Генерация индекса с защитой от переполнения RAM. """
     from books.models import Book
     from sklearn.feature_extraction.text import TfidfVectorizer

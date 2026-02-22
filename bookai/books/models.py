@@ -12,7 +12,7 @@ class Book(models.Model):
     author = models.CharField(max_length=255)
     summary = models.TextField()
     publication_year = models.IntegerField(null=True, blank=True)
-    
+    image_url = models.URLField(max_length=500, null=True, blank=True) # Добавь это
     # This is the line that was likely causing the error
     moods = models.ManyToManyField(Mood, related_name='books')
 

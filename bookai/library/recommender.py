@@ -1,100 +1,63 @@
 import os
 import pickle
 import re
-import gc  # Модуль для ручной очистки памяти
+import gc
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import TruncatedSVD
 from django.db import models
 
 def clean_text(text):
-    """ Очистка текста с жестким лимитом на количество слов для экономии RAM. """
-    if not text: return ""
+    """ Очистка текста: убираем HTML, знаки препинания и лишние слова. """
+    if not text:
+        return ""
     text = text.lower()
-    text = re.sub(r'<.*?>', '', text) # Убираем HTML из данных Goodreads
+    text = re.sub(r'<.*?>', '', text)  # Удаление HTML-тегов
     text = re.sub(r'[^a-zа-яё\s]', '', text)
-    # Берем только первые 70 слов — этого достаточно для понимания смысла
+    # Ограничиваем длину текста для экономии RAM
     return " ".join(text.split()[:70])
 
 def generate_embeddings():
+    """ 
+    Создание векторного индекса для поиска. 
+    Используем 15,000 книг, чтобы избежать ошибки SQLite 'too many SQL variables'.
+    """
     from books.models import Book
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.decomposition import TruncatedSVD
 
-    # ОГРАНИЧЕНИЕ: Берем первые 50,000 книг, чтобы не сжечь RAM
-    # 2.3 миллиона — это слишком много для локальной обработки за один раз
-    print("🧠 Подготовка к обучению на 50,000 томах...")
+    print("🧠 Подготовка AI: Анализирую 15,000 томов из архива...")
     
-    queryset = Book.objects.only('id', 'title', 'summary').prefetch_related('moods')[:50000]
+    # Берем срез данных, чтобы не перегрузить систему
+    # Отключаем prefetch_related, чтобы избежать лимита переменных в SQLite
+    queryset = Book.objects.only('id', 'title', 'summary')[:15000]
     
     ids = []
     texts = []
     
     for b in queryset:
-        mood_tags = " ".join([m.name for m in b.moods.all()])
-        content = f"{mood_tags} {b.title} {(b.summary or '')[:300]}"
+        # Формируем контент для анализа (название + описание)
+        content = f"{b.title} {(b.summary or '')[:400]}"
         texts.append(clean_text(content))
         ids.append(b.id)
         
-    if not texts: return "Библиотека пуста."
-
-    # Настройки для экономии памяти
-    vectorizer = TfidfVectorizer(stop_words='english', max_features=3000)
-    tfidf_matrix = vectorizer.fit_transform(texts).astype(np.float32)
-    
-    del texts
-    gc.collect()
-
-    svd = TruncatedSVD(n_components=100, random_state=42)
-    concept_matrix = svd.fit_transform(tfidf_matrix).astype(np.float32)
-
-    data = {'vectorizer': vectorizer, 'svd': svd, 'matrix': concept_matrix, 'ids': ids}
-
-    with open('book_embeddings.pkl', 'wb') as f:
-        pickle.dump(data, f)
-    
-    return f"Успех! AI обучен на 50,000 книгах из {Book.objects.count()} доступных."
-    """ Генерация индекса с защитой от переполнения RAM. """
-    from books.models import Book
-    from sklearn.feature_extraction.text import TfidfVectorizer
-    from sklearn.decomposition import TruncatedSVD
-
-    print("🧠 Начинаю обучение AI. Режим экономии ресурсов активен...")
-    
-    ids = []
-    texts = []
-    
-    # Итерируемся чанками (кусками), чтобы не загружать 10,000 объектов сразу
-    queryset = Book.objects.only('id', 'title', 'summary').prefetch_related('moods')
-    
-    for b in queryset.iterator(chunk_size=1000):
-        mood_tags = " ".join([m.name for m in b.moods.all()])
-        # Настроения повторяем дважды для веса, описание обрезаем
-        content = f"{mood_tags} {mood_tags} {b.title} {(b.summary or '')[:400]}"
-        texts.append(clean_text(content))
-        ids.append(b.id)
-        
-        # Раз в 2000 итераций чистим память от "хвостов" Python
-        if len(ids) % 2000 == 0:
-            gc.collect()
-
     if not texts:
-        return "Ошибка: База данных книг пуста."
+        return "Ошибка: Книги не найдены в базе."
 
-    # Настройка векторизатора (Safe Mode)
+    print("📊 Векторизация смыслов (TF-IDF)...")
     vectorizer = TfidfVectorizer(
         stop_words='english', 
-        max_features=4000, 
-        min_df=4
+        max_features=3000, 
+        min_df=2
     )
     
-    # Преобразуем тексты в числа (float32 экономит 50% RAM)
+    # Используем float32 для экономии 50% RAM
     tfidf_matrix = vectorizer.fit_transform(texts).astype(np.float32)
     
-    # КРИТИЧЕСКИ ВАЖНО: Удаляем массив строк сразу после векторизации
+    # Принудительная очистка памяти от сырых текстов
     del texts
     gc.collect()
 
-    # Сжатие смыслов (LSA) до 100 компонентов
+    print("✂️ Сжатие данных (LSA/SVD)...")
     svd = TruncatedSVD(n_components=100, random_state=42)
     concept_matrix = svd.fit_transform(tfidf_matrix).astype(np.float32)
 
@@ -105,18 +68,21 @@ def generate_embeddings():
         'ids': ids
     }
 
-    # Сохраняем результат в корневую папку
-    with open('book_embeddings.pkl', 'wb') as f:
+    # Сохраняем "мозг" AI в корень проекта
+    pickle_path = 'book_embeddings.pkl'
+    with open(pickle_path, 'wb') as f:
         pickle.dump(data, f)
     
     gc.collect()
-    return f"Успех! AI проанализировал {len(ids)} книг."
+    print(f"✅ AI успешно обучен на 15,000 книгах.")
+    return "Успех! Модель готова к работе."
 
 def get_recommendations(user_query, top_n=12):
-    """ Поиск с автоматическим фоллбэком на случайные книги при пустом результате. """
+    """ Поиск наиболее похожих книг по запросу пользователя. """
     from books.models import Book
     pickle_path = 'book_embeddings.pkl'
     
+    # Если файл модели еще не создан, возвращаем случайные книги
     if not os.path.exists(pickle_path):
         return Book.objects.all().order_by('?')[:top_n]
 
@@ -127,26 +93,24 @@ def get_recommendations(user_query, top_n=12):
     if not query:
         return Book.objects.all().order_by('?')[:top_n]
 
-    # Превращаем запрос в вектор
-    q_vec = data['vectorizer'].transform([query])
-    q_con = data['svd'].transform(q_vec)
-    
-    # Считаем косинусное сходство
-    sims = cosine_similarity(q_con, data['matrix'])[0]
+    # Преобразуем запрос пользователя в вектор пространства знаний AI
+    try:
+        q_vec = data['vectorizer'].transform([query])
+        q_con = data['svd'].transform(q_vec)
+        
+        # Вычисляем близость (косинусное сходство)
+        sims = cosine_similarity(q_con, data['matrix'])[0]
+        
+        # Получаем индексы самых похожих книг
+        sorted_idx = np.argsort(sims)[::-1][:top_n]
+        top_ids = [data['ids'][i] for i in sorted_idx]
 
-    # Отбираем индексы с заметным сходством (> 0.01)
-    relevant_idx = np.where(sims > 0.01)[0]
-    
-    if len(relevant_idx) == 0:
-        # Если ничего не нашли, возвращаем случайные из 10,000 для разнообразия
+        # Сохраняем порядок сортировки для Django QuerySet
+        preserved = models.Case(
+            *[models.When(pk=pk, then=pos) for pos, pk in enumerate(top_ids)]
+        )
+        return Book.objects.filter(id__in=top_ids).order_by(preserved)
+        
+    except Exception as e:
+        print(f"Ошибка поиска: {e}")
         return Book.objects.all().order_by('?')[:top_n]
-
-    # Сортировка по релевантности
-    sorted_idx = sorted(relevant_idx, key=lambda i: sims[i], reverse=True)[:top_n]
-    top_ids = [data['ids'][i] for i in sorted_idx]
-
-    # Сохраняем порядок в QuerySet (самые подходящие — сверху)
-    preserved = models.Case(
-        *[models.When(pk=pk, then=pos) for pos, pk in enumerate(top_ids)]
-    )
-    return Book.objects.filter(id__in=top_ids).order_by(preserved)

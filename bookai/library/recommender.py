@@ -29,6 +29,7 @@ def generate_embeddings():
     
     # Берем срез данных, чтобы не перегрузить систему
     # Отключаем prefetch_related, чтобы избежать лимита переменных в SQLite
+    print(f"DEBUG: Я СЕЙЧАС БЕРУ {Book.objects.count()} КНИГ ИЗ БАЗЫ")
     queryset = Book.objects.only('id', 'title', 'summary')[:20000]
     
     ids = []
@@ -80,8 +81,8 @@ def generate_embeddings():
 def get_recommendations(user_query, top_n=12):
     """ Поиск наиболее похожих книг по запросу пользователя. """
     from books.models import Book
-    pickle_path = 'book_embeddings.pkl'
-    
+    import os
+    pickle_path = os.path.join(os.path.dirname(__file__), 'book_embeddings.pkl')
     # Если файл модели еще не создан, возвращаем случайные книги
     if not os.path.exists(pickle_path):
         return Book.objects.all().order_by('?')[:top_n]

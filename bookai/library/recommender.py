@@ -25,11 +25,11 @@ def generate_embeddings():
     """
     from books.models import Book
 
-    print("🧠 Подготовка AI: Анализирую 15,000 томов из архива...")
+    print("🧠 Подготовка AI: Анализирую 20,000 томов из архива...")
     
     # Берем срез данных, чтобы не перегрузить систему
     # Отключаем prefetch_related, чтобы избежать лимита переменных в SQLite
-    queryset = Book.objects.only('id', 'title', 'summary')[:15000]
+    queryset = Book.objects.only('id', 'title', 'summary')[:20000]
     
     ids = []
     texts = []
@@ -74,7 +74,7 @@ def generate_embeddings():
         pickle.dump(data, f)
     
     gc.collect()
-    print(f"✅ AI успешно обучен на 15,000 книгах.")
+    print(f"✅ AI успешно обучен на 20,000 книгах.")
     return "Успех! Модель готова к работе."
 
 def get_recommendations(user_query, top_n=12):

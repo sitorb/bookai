@@ -30,8 +30,8 @@ def generate_embeddings():
     # Берем срез данных, чтобы не перегрузить систему
     # Отключаем prefetch_related, чтобы избежать лимита переменных в SQLite
     print(f"DEBUG: Я СЕЙЧАС БЕРУ {Book.objects.count()} КНИГ ИЗ БАЗЫ")
-    queryset = Book.objects.only('id', 'title', 'summary')[:20000]
-    
+# Вместо [:20000] напиши просто .all()
+    queryset = Book.objects.only('id', 'title', 'summary').all()    
     ids = []
     texts = []
     

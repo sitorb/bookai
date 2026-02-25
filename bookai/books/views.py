@@ -3,32 +3,61 @@ from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from .models import Book
 from .serializers import BookSerializer
+import json
+from django.http import JsonResponse
+from django.views.decorators.csrf import csrf_exempt
+from books.models import Book
 from library.recommender import get_recommendations
 
-@api_view(['POST', 'GET'])
-@permission_classes([AllowAny])
+@csrf_exempt
 def recommend_books_api(request):
     """
-    Handles mood-based recommendations (POST) and general library listing (GET).
-    This unified view prevents 404s when the frontend requests the library.
+    Основной эндпоинт для получения рекомендаций.
+    Обрабатывает запрос пользователя и возвращает список найденных книг.
     """
-    search_term = ""
-    if request.method == 'POST':
-        search_term = request.data.get('mood', '')
-    else:
-        search_term = request.query_params.get('search', '')
+    query = ""
 
-    try:
-        if search_term:
-            books = get_recommendations(search_term)
-        else:
-            # Return a default set of books if no search term is provided
-            books = Book.objects.all()[:12]
-            
-        serializer = BookSerializer(books, many=True)
-        return Response(serializer.data)
-    except Exception as e:
-        return Response([], status=200)
+    # 1. Пытаемся достать запрос из разных типов данных (JSON или Form)
+    if request.method == "POST":
+        try:
+            # Если фронтенд прислал JSON (например, через fetch)
+            data = json.loads(request.body)
+            query = data.get('query', '')
+        except json.JSONDecodeError:
+            # Если это обычный POST-запрос из формы
+            query = request.POST.get('query', '')
+    else:
+        # Для GET-запросов (если тестируешь через строку браузера)
+        query = request.GET.get('query', '')
+
+    # Логируем запрос в терминал для контроля
+    print(f"DEBUG: Пользователь ищет: '{query}'")
+
+    if not query:
+        return JsonResponse([], safe=False)
+
+    # 2. Получаем список объектов Book от нашего AI
+    recommended_books = get_recommendations(query)
+    
+    # 3. Превращаем объекты Django в список словарей, который поймет React/HTML
+    results = []
+    for book in recommended_books:
+        results.append({
+            'id': book.id,
+            'title': book.title,
+            # Проверяем наличие автора, чтобы не было ошибки
+            'author': getattr(book, 'author', 'Unknown Author'),
+            # Обрезаем длинные аннотации для красоты карточки
+            'summary': (book.summary or "Описание скоро появится...")[:250] + "...",
+            # Если есть обложка — отдаем URL, если нет — None
+            'cover_image': book.cover_image.url if hasattr(book, 'cover_image') and book.cover_image else None,
+        })
+
+    # Логируем количество найденных книг перед отправкой
+    print(f"DEBUG: Найдено и отправлено книг: {len(results)}")
+    
+    # Теперь в терминале вместо "200 2" ты увидишь реальный размер данных
+    return JsonResponse(results, safe=False)
 
 @api_view(['GET'])
 @permission_classes([AllowAny])

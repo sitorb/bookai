@@ -6,9 +6,6 @@ from library.recommender import get_recommendations
 
 @csrf_exempt
 def recommend_books_api(request):
-    """
-    Финальная версия API: принимает 'mood', возвращает полные данные книг.
-    """
     query = ""
     if request.method == "POST":
         try:
@@ -17,32 +14,33 @@ def recommend_books_api(request):
         except:
             query = request.POST.get('mood', '')
     
-    print(f"--- АНАЛИЗ ЗАПРОСА ---")
-    print(f"DEBUG: Получен текст (mood): '{query}'")
-
-    if not query or len(str(query).strip()) < 2:
+    if not query:
         return JsonResponse([], safe=False)
 
-    # Получаем рекомендации от AI
+    # Логируем для проверки в терминале
+    print(f"DEBUG: Поиск для '{query}'")
     recommended_books = get_recommendations(str(query))
     
     results = []
+    # Определяем базовый адрес сервера для полных путей к картинкам
+    domain = request.build_absolute_uri('/')[:-1] 
+
     for book in recommended_books:
-        # Пытаемся получить URL обложки
-        cover_url = None
+        # Проверяем наличие обложки в разных полях
+        cover = None
         if hasattr(book, 'cover_image') and book.cover_image:
-            cover_url = book.cover_image.url
+            cover = f"{domain}{book.cover_image.url}"
         elif hasattr(book, 'image_url') and book.image_url:
-            cover_url = book.image_url
+            cover = book.image_url # Если это внешняя ссылка
 
         results.append({
             'id': book.id,
             'title': book.title,
             'author': getattr(book, 'author', 'Unknown'),
-            'summary': (book.summary or "No description.")[:300] + "...",
-            'cover_image': cover_url,
+            'summary': (book.summary or "No description available....")[:250] + "...",
+            'cover_image': cover,
             'publication_year': getattr(book, 'publication_year', '')
         })
 
-    print(f"DEBUG: Отправлено книг на фронтенд: {len(results)}")
+    print(f"DEBUG: Отправлено книг: {len(results)}")
     return JsonResponse(results, safe=False)

@@ -14,14 +14,15 @@ import Library from './pages/Library';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
+import Articles from './pages/Articles'; // Новый импорт для страницы статей
 
-// 3. Global Styles (Optional but recommended)
+// 3. Global Styles
 import './App.css';
 
 function App() {
   return (
     <Router>
-      {/* Global Notifications: Fixes the Vite resolution error */}
+      {/* Глобальные уведомления с красивым шрифтом под стиль библиотеки */}
       <Toaster 
         position="top-right" 
         reverseOrder={false} 
@@ -36,19 +37,23 @@ function App() {
       />
 
       <div className="min-h-screen bg-stone-50 flex flex-col">
-        {/* Navigation bar is always visible */}
+        {/* Навигация всегда сверху (не забудь добавить ссылку на Articles в сам компонент Navbar!) */}
         <Navbar />
 
-        {/* Safety Net: Catches crashes in any of the pages below */}
+        {/* Предохранитель: если страница "упадет", ErrorBoundary покажет запасной интерфейс */}
         <ErrorBoundary>
           <main className="flex-grow">
             <Routes>
-              {/* --- Public Routes --- */}
+              {/* --- Public Routes (Доступны всем) --- */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/discovery" element={<Discovery />} />
+              
+              {/* Новый маршрут для статей — обычно они публичные */}
+              <Route path="/articles" element={<Articles />} />
 
-              {/* --- Protected Routes (Require Token) --- */}
-              {/* These guards prevent "reading properties of null" errors */}
+              {/* --- Protected Routes (Только для авторизованных пользователей) --- */}
+              {/* PrivateRoute защищает от ошибок "reading properties of null" при отсутствии токена */}
               <Route 
                 path="/recommend" 
                 element={
@@ -76,18 +81,17 @@ function App() {
                 } 
               />
 
-              {/* --- Logic Routes --- */}
-              {/* Default landing page */}
+              {/* --- Logic Routes (Перенаправления) --- */}
+              {/* Главная страница по умолчанию ведет на рекомендации */}
               <Route path="/" element={<Navigate to="/recommend" replace />} />
               
-              {/* 404 Redirect to home */}
+              {/* 404: Если адрес не найден, отправляем пользователя на главную */}
               <Route path="*" element={<Navigate to="/recommend" replace />} />
-              <Route path="/discovery" element={<Discovery />} />
             </Routes>
           </main>
         </ErrorBoundary>
 
-        {/* Simple Footer */}
+        {/* Подвал в винтажном стиле */}
         <footer className="py-6 text-center text-stone-400 text-sm font-serif italic border-t border-stone-200">
           Powered by AI Librarian &copy; 2026
         </footer>

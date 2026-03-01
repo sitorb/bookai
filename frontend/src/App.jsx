@@ -1,7 +1,6 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
-import Discovery from './pages/Discovery';
 
 // 1. Import Layout & Logic Components
 import Navbar from './components/Navbar';
@@ -14,7 +13,8 @@ import Library from './pages/Library';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
-import Articles from './pages/Articles'; // Новый импорт для страницы статей
+import Discovery from './pages/Discovery';
+import Articles from './pages/Articles'; // Vite will find Articles.jsx automatically
 
 // 3. Global Styles
 import './App.css';
@@ -22,7 +22,7 @@ import './App.css';
 function App() {
   return (
     <Router>
-      {/* Глобальные уведомления с красивым шрифтом под стиль библиотеки */}
+      {/* Global Notifications */}
       <Toaster 
         position="top-right" 
         reverseOrder={false} 
@@ -37,23 +37,20 @@ function App() {
       />
 
       <div className="min-h-screen bg-stone-50 flex flex-col">
-        {/* Навигация всегда сверху (не забудь добавить ссылку на Articles в сам компонент Navbar!) */}
+        {/* Navigation bar */}
         <Navbar />
 
-        {/* Предохранитель: если страница "упадет", ErrorBoundary покажет запасной интерфейс */}
+        {/* Safety Net for crashes */}
         <ErrorBoundary>
           <main className="flex-grow">
             <Routes>
-              {/* --- Public Routes (Доступны всем) --- */}
+              {/* --- Public Routes --- */}
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
               <Route path="/discovery" element={<Discovery />} />
-              
-              {/* Новый маршрут для статей — обычно они публичные */}
               <Route path="/articles" element={<Articles />} />
 
-              {/* --- Protected Routes (Только для авторизованных пользователей) --- */}
-              {/* PrivateRoute защищает от ошибок "reading properties of null" при отсутствии токена */}
+              {/* --- Protected Routes --- */}
               <Route 
                 path="/recommend" 
                 element={
@@ -81,17 +78,14 @@ function App() {
                 } 
               />
 
-              {/* --- Logic Routes (Перенаправления) --- */}
-              {/* Главная страница по умолчанию ведет на рекомендации */}
+              {/* --- Logic Routes --- */}
               <Route path="/" element={<Navigate to="/recommend" replace />} />
-              
-              {/* 404: Если адрес не найден, отправляем пользователя на главную */}
               <Route path="*" element={<Navigate to="/recommend" replace />} />
             </Routes>
           </main>
         </ErrorBoundary>
 
-        {/* Подвал в винтажном стиле */}
+        {/* Footer */}
         <footer className="py-6 text-center text-stone-400 text-sm font-serif italic border-t border-stone-200">
           Powered by AI Librarian &copy; 2026
         </footer>

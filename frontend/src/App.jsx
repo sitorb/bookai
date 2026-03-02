@@ -14,7 +14,8 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Profile from './pages/Profile';
 import Discovery from './pages/Discovery';
-import Articles from './pages/Articles'; // Vite will find Articles.jsx automatically
+import Articles from './pages/Articles';
+import CreateArticle from './pages/CreateArticle'; // Ensure this file exists as .jsx
 
 // 3. Global Styles
 import './App.css';
@@ -22,25 +23,17 @@ import './App.css';
 function App() {
   return (
     <Router>
-      {/* Global Notifications */}
       <Toaster 
         position="top-right" 
-        reverseOrder={false} 
         toastOptions={{
           className: 'font-serif shadow-xl border border-stone-100',
-          duration: 4000,
-          style: {
-            background: '#ffffff',
-            color: '#1c1917',
-          },
+          style: { background: '#ffffff', color: '#1c1917' },
         }}
       />
 
       <div className="min-h-screen bg-stone-50 flex flex-col">
-        {/* Navigation bar */}
         <Navbar />
 
-        {/* Safety Net for crashes */}
         <ErrorBoundary>
           <main className="flex-grow">
             <Routes>
@@ -53,39 +46,29 @@ function App() {
               {/* --- Protected Routes --- */}
               <Route 
                 path="/recommend" 
-                element={
-                  <PrivateRoute>
-                    <Recommend />
-                  </PrivateRoute>
-                } 
+                element={<PrivateRoute><Recommend /></PrivateRoute>} 
               />
-              
               <Route 
                 path="/library" 
-                element={
-                  <PrivateRoute>
-                    <Library />
-                  </PrivateRoute>
-                } 
+                element={<PrivateRoute><Library /></PrivateRoute>} 
               />
-
               <Route 
                 path="/profile" 
-                element={
-                  <PrivateRoute>
-                    <Profile />
-                  </PrivateRoute>
-                } 
+                element={<PrivateRoute><Profile /></PrivateRoute>} 
+              />
+              {/* New: Route for users to add articles */}
+              <Route 
+                path="/articles/create" 
+                element={<PrivateRoute><CreateArticle /></PrivateRoute>} 
               />
 
-              {/* --- Logic Routes --- */}
+              {/* --- Redirections --- */}
               <Route path="/" element={<Navigate to="/recommend" replace />} />
               <Route path="*" element={<Navigate to="/recommend" replace />} />
             </Routes>
           </main>
         </ErrorBoundary>
 
-        {/* Footer */}
         <footer className="py-6 text-center text-stone-400 text-sm font-serif italic border-t border-stone-200">
           Powered by AI Librarian &copy; 2026
         </footer>

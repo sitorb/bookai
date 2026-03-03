@@ -44,3 +44,19 @@ def recommend_books_api(request):
 
     print(f"DEBUG: Отправлено книг: {len(results)}")
     return JsonResponse(results, safe=False)
+
+
+from rest_framework import generics, permissions
+from .models import Article
+from .serializers import ArticleSerializer
+
+class ArticleListCreateView(generics.ListCreateAPIView):
+    queryset = Article.objects.all()
+    serializer_serializer = ArticleSerializer
+    
+    # Allow anyone to read, but only authenticated users to post
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+
+    def perform_create(self, serializer):
+        # Automatically set the author to the currently logged-in user
+        serializer.save(author=self.request.user)

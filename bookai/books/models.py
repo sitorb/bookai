@@ -19,11 +19,10 @@ class Book(models.Model):
     def __str__(self):
         return f"{self.title} - {self.author}"
     
-from django.db import migrations, models
-from django.contrib.auth.models import User
+from django.db import models
+from django.conf import settings  # <--- 1. Import settings
 
 class Article(models.Model):
-    # Categories matching your React dropdown
     CATEGORY_CHOICES = [
         ('Literary Theory', 'Literary Theory'),
         ('Technology', 'Technology'),
@@ -32,13 +31,20 @@ class Article(models.Model):
     ]
 
     title = models.CharField(max_length=255)
-    author = models.ForeignKey(User, on_delete=models.CASCADE, related_name='articles')
+    
+    # 2. Change 'User' to settings.AUTH_USER_MODEL
+    author = models.ForeignKey(
+        settings.AUTH_USER_MODEL, 
+        on_delete=models.CASCADE, 
+        related_name='articles'
+    )
+    
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Literary Theory')
-    content = models.TextField() # This is the "Thoughts/Excerpt"
+    content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ['-created_at'] # Newest articles first
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"{self.title} by {self.author.username}"

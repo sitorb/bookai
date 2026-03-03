@@ -1,79 +1,122 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import axios from 'axios';
 import toast from 'react-hot-toast';
 
 const CreateArticle = () => {
   const [title, setTitle] = useState('');
   const [category, setCategory] = useState('Literary Theory');
-  const [excerpt, setExcerpt] = useState('');
+  const [content, setContent] = useState('');
+  const [loading, setLoading] = useState(false);
+  
   const navigate = useNavigate();
+  const API_BASE_URL = 'http://127.0.0.1:8000';
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setLoading(true);
+
+    const token = localStorage.getItem('token'); // Retrieve the JWT/Auth token
+    
     try {
-      // In a real app, you'd send this to your Django backend
-      // await axios.post('http://127.0.0.1:8000/api/articles/', { title, category, excerpt });
-      
-      toast.success("Entry added to the Journal!");
-      navigate('/articles');
+      // Sending the data to the Django endpoint we created
+      await axios.post(`${API_BASE_URL}/api/articles/`, {
+        title: title,
+        category: category,
+        content: content
+      }, {
+        headers: {
+          'Authorization': `Bearer ${token}`, // Crucial for identifying the user
+          'Content-Type': 'application/json'
+        }
+      });
+
+      toast.success("Entry added to the Journal archives.");
+      navigate('/articles'); // Return to the journal list
     } catch (err) {
-      toast.error("The ink ran dry. Please try again.");
+      console.error("Submission error:", err);
+      toast.error("The librarian couldn't archive your entry. Please check your connection.");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#fdfaf5] py-12 px-4 font-serif text-[#432818]">
-      <div className="max-w-2xl mx-auto bg-white p-10 rounded-xl border border-[#ede0d4] shadow-sm">
-        <h1 className="text-3xl font-light mb-8 tracking-tight text-[#99582a] italic">
-          New Journal Entry
-        </h1>
+    <div className="min-h-screen bg-[#fdfaf5] py-16 px-4 font-serif text-[#432818]">
+      <div className="max-w-3xl mx-auto">
         
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label className="block text-[10px] uppercase tracking-widest text-[#b08968] mb-2">Title</label>
-            <input 
-              type="text" 
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full border-b border-[#ede0d4] py-2 focus:border-[#99582a] outline-none transition-colors text-lg"
-              placeholder="The Art of the Archive..."
-              required
-            />
-          </div>
+        {/* Breadcrumb / Back Link */}
+        <Link to="/articles" className="text-[10px] uppercase tracking-[0.2em] text-[#b08968] hover:text-[#99582a] transition-colors mb-8 inline-block">
+          ← Back to Journal
+        </Link>
 
-          <div>
-            <label className="block text-[10px] uppercase tracking-widest text-[#b08968] mb-2">Category</label>
-            <select 
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="w-full bg-transparent border-b border-[#ede0d4] py-2 outline-none"
-            >
-              <option>Literary Theory</option>
-              <option>Technology</option>
-              <option>History</option>
-              <option>Community Discovery</option>
-            </select>
-          </div>
+        <div className="bg-white p-10 md:p-16 rounded-2xl border border-[#ede0d4] shadow-sm relative overflow-hidden">
+          {/* Decorative Corner Accent */}
+          <div className="absolute top-0 right-0 w-24 h-24 bg-[#f3e9dc] rounded-bl-full opacity-50 -mr-12 -mt-12" />
 
-          <div>
-            <label className="block text-[10px] uppercase tracking-widest text-[#b08968] mb-2">Your Thoughts</label>
-            <textarea 
-              value={excerpt}
-              onChange={(e) => setExcerpt(e.target.value)}
-              className="w-full h-40 border border-[#ede0d4] p-4 rounded-lg focus:border-[#99582a] outline-none resize-none italic text-[#7f5539]"
-              placeholder="Write your musings here..."
-              required
-            />
-          </div>
+          <div className="relative z-10">
+            <h1 className="text-4xl font-light mb-2 tracking-tight">
+              Pen a <span className="italic text-[#99582a]">New Entry</span>
+            </h1>
+            <p className="text-sm text-[#7f5539] mb-10 opacity-70">Contribute your musings to the Autumn Librarian archives.</p>
 
-          <button 
-            type="submit"
-            className="w-full bg-[#7f5539] text-[#ede0d4] py-3 rounded-full uppercase text-xs tracking-widest hover:bg-[#99582a] transition-all shadow-md"
-          >
-            Publish to Archives
-          </button>
-        </form>
+            <form onSubmit={handleSubmit} className="space-y-8">
+              {/* Title Input */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-[#b08968] mb-3">Article Title</label>
+                <input 
+                  type="text" 
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full bg-transparent border-b border-[#ede0d4] py-3 text-2xl outline-none focus:border-[#99582a] transition-all placeholder:text-[#ede0d4] font-bold"
+                  placeholder="The Whispers of the Old Library..."
+                  required
+                />
+              </div>
+
+              {/* Category Dropdown */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest text-[#b08968] mb-3">Category</label>
+                  <select 
+                    value={category}
+                    onChange={(e) => setCategory(e.target.value)}
+                    className="w-full bg-[#fdfaf5] border border-[#ede0d4] p-3 rounded-lg outline-none focus:ring-1 focus:ring-[#99582a] text-sm"
+                  >
+                    <option>Literary Theory</option>
+                    <option>Technology</option>
+                    <option>History</option>
+                    <option>Community Discovery</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Content Textarea */}
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest text-[#b08968] mb-3">Your Content</label>
+                <textarea 
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full h-64 bg-[#fdfaf5] border border-[#ede0d4] p-6 rounded-xl outline-none focus:ring-1 focus:ring-[#99582a] transition-all italic text-[#7f5539] leading-relaxed resize-none"
+                  placeholder="In the quietest corner of the archives, I found a volume that changed my perspective..."
+                  required
+                />
+              </div>
+
+              {/* Submit Button */}
+              <div className="pt-6 flex justify-center">
+                <button 
+                  type="submit"
+                  disabled={loading}
+                  className={`bg-[#7f5539] text-[#ede0d4] px-12 py-4 rounded-full uppercase text-xs tracking-widest shadow-lg transition-all
+                    ${loading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-[#99582a] hover:-translate-y-1 active:scale-95'}`}
+                >
+                  {loading ? "Sealing the Envelope..." : "Publish to Journal"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       </div>
     </div>
   );

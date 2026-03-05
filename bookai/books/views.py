@@ -60,3 +60,28 @@ class ArticleListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         # Automatically set the author to the currently logged-in user
         serializer.save(author=self.request.user)
+
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status, permissions
+from django.shortcuts import get_object_or_404
+from .models import Article
+
+class ToggleLikeView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, pk):
+        article = get_object_or_404(Article, pk=pk)
+        user = request.user
+        
+        if user in article.likes.all():
+            article.likes.remove(user)
+            liked = False
+        else:
+            article.likes.add(user)
+            liked = True
+            
+        return Response({
+            'liked': liked,
+            'count': article.total_likes()
+        }, status=status.HTTP_200_OK)

@@ -48,3 +48,12 @@ class Article(models.Model):
 
     def __str__(self):
         return f"{self.title} by {self.author.username}"
+    
+    likes = models.ManyToManyField(
+        settings.AUTH_USER_MODEL, 
+        related_name='liked_articles', 
+        blank=True
+    )
+
+    def total_likes(self):
+        return self.likes.count()

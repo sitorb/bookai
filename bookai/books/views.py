@@ -52,15 +52,15 @@ from .serializers import ArticleSerializer
 
 class ArticleListCreateView(generics.ListCreateAPIView):
     queryset = Article.objects.all()
-    serializer_serializer = ArticleSerializer
+    serializer_class = ArticleSerializer
     
-    # Allow anyone to read, but only authenticated users to post
+    # Allows guests to see articles, but keeps track of user ID for the "is_liked" status
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        # Automatically set the author to the currently logged-in user
         serializer.save(author=self.request.user)
 
+        
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions

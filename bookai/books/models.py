@@ -42,6 +42,7 @@ class Article(models.Model):
     category = models.CharField(max_length=50, choices=CATEGORY_CHOICES, default='Literary Theory')
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
+    ai_tags = models.CharField(max_length=255, blank=True, null=True)
 
     class Meta:
         ordering = ['-created_at']

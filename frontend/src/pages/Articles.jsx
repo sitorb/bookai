@@ -8,12 +8,10 @@ const Articles = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   
-  // Get current user ID from local storage (assuming you store it during login)
-  // This helps us show the "Delete" button only to the owner
+  // Retrieve user info from local storage for ownership checks
   const currentUserId = localStorage.getItem('user_id'); 
   const API_BASE_URL = 'http://127.0.0.1:8000';
 
-  // 1. Fetch Articles on Load
   useEffect(() => {
     const fetchArticles = async () => {
       try {
@@ -31,11 +29,10 @@ const Articles = () => {
     fetchArticles();
   }, []);
 
-  // 2. Heart/Like Logic
   const handleLike = async (id) => {
     const token = localStorage.getItem('token');
     if (!token) {
-      toast.error("Please log in to favorite this entry.");
+      toast.error("Please log in to heart this entry.");
       return;
     }
 
@@ -44,32 +41,30 @@ const Articles = () => {
         headers: { Authorization: `Bearer ${token}` }
       });
 
-      // Update UI state instantly
       setArticles(prev => prev.map(article => 
         article.id === id 
           ? { ...article, likes_count: response.data.count, is_liked: response.data.liked } 
           : article
       ));
 
-      if (response.data.liked) toast("Hearted", { icon: '❤️' });
+      if (response.data.liked) toast("Added to favorites", { icon: '❤️' });
     } catch (err) {
-      toast.error("The ink failed to set. Try liking again.");
+      toast.error("The ink failed to set. Try again.");
     }
   };
 
-  // 3. Delete Logic (Owner Only)
   const handleDelete = async (id) => {
     const token = localStorage.getItem('token');
-    if (!window.confirm("Are you sure you want to remove this entry from the permanent record?")) return;
+    if (!window.confirm("Remove this entry from the permanent record?")) return;
 
     try {
       await axios.delete(`${API_BASE_URL}/api/articles/${id}/`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       setArticles(prev => prev.filter(article => article.id !== id));
-      toast.success("Entry removed from the archives.");
+      toast.success("Entry removed.");
     } catch (err) {
-      toast.error("You do not have the authority to remove this volume.");
+      toast.error("You cannot remove what you did not write.");
     }
   };
 
@@ -83,13 +78,13 @@ const Articles = () => {
     <div className="min-h-screen bg-[#fdfaf5] py-12 px-4 font-serif text-[#432818]">
       <div className="max-w-7xl mx-auto">
         
-        {/* Header Section */}
+        {/* Page Header */}
         <div className="flex flex-col md:flex-row justify-between items-center mb-16 border-b border-[#ede0d4] pb-10 gap-6">
           <div className="text-center md:text-left">
             <h1 className="text-5xl font-light mb-3 tracking-tight">
               Library <span className="italic text-[#99582a]">Journal</span>
             </h1>
-            <p className="text-[#b08968] italic tracking-wide opacity-80">Community discoveries from our 2.3M volume collection</p>
+            <p className="text-[#b08968] italic opacity-80">Reflections from the 2.3 million volume archives</p>
           </div>
           
           <Link 
@@ -100,32 +95,42 @@ const Articles = () => {
           </Link>
         </div>
 
-        {/* Status Messages */}
-        {loading && <div className="text-center py-20 italic opacity-40 text-xl animate-pulse">Consulting the records...</div>}
+        {loading && <div className="text-center py-20 italic opacity-40 text-xl animate-pulse">Scanning the records...</div>}
         {error && <div className="text-center py-20 text-red-800 italic">{error}</div>}
-        {!loading && articles.length === 0 && (
-          <div className="text-center py-20 opacity-20 text-3xl italic">No entries found in the journal.</div>
-        )}
 
-        {/* Articles Grid  */}
+        {/* Grid of Journal Cards */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-12">
           {articles.map((post) => (
             <div 
               key={post.id} 
-              className="group bg-white rounded-2xl border border-[#ede0d4] shadow-sm overflow-hidden flex flex-col h-[520px] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
+              className="group bg-white rounded-2xl border border-[#ede0d4] shadow-sm overflow-hidden flex flex-col h-[550px] transition-all duration-500 hover:shadow-2xl hover:-translate-y-2"
             >
-              {/* Card Top: Visual Bookplate */}
-              <div className="h-48 bg-[#f3e9dc] relative flex items-center justify-center p-8 text-center border-b border-[#fdfaf5]">
+              {/* Top Section: Visual Metadata */}
+              <div className="h-52 bg-[#f3e9dc] relative flex flex-col items-center justify-center p-6 text-center border-b border-[#fdfaf5]">
                 <span className="text-[14rem] font-bold text-[#99582a] opacity-[0.03] absolute select-none pointer-events-none">
                   {post.title[0]}
                 </span>
-                <div className="z-10">
-                  <p className="text-[9px] uppercase tracking-[0.5em] text-[#b08968] mb-4">{post.category}</p>
-                  <h4 className="text-xl font-bold text-[#7f5539] leading-tight px-4 line-clamp-2">{post.title}</h4>
+                
+                <div className="z-10 w-full">
+                  <p className="text-[9px] uppercase tracking-[0.5em] text-[#b08968] mb-3">{post.category}</p>
+                  <h4 className="text-xl font-bold text-[#7f5539] leading-tight px-4 line-clamp-2 mb-4">{post.title}</h4>
+                  
+                  {/* AI "Ink Stamp" Tags  */}
+                  <div className="flex flex-wrap justify-center gap-2 mt-2">
+                    {post.ai_tags?.split(',').map((tag, idx) => (
+                      <span 
+                        key={idx}
+                        className="text-[8px] px-2 py-0.5 border border-[#99582a] text-[#99582a] rounded-sm uppercase tracking-tighter opacity-60 font-mono"
+                        style={{ transform: `rotate(${idx % 2 === 0 ? -2 : 2}deg)` }}
+                      >
+                        {tag.trim()}
+                      </span>
+                    ))}
+                  </div>
                 </div>
               </div>
 
-              {/* Card Body */}
+              {/* Middle Section: Content */}
               <div className="p-8 flex flex-col flex-grow relative">
                 <div className="absolute left-0 top-10 bottom-10 w-1 bg-[#99582a] opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
                 
@@ -134,13 +139,13 @@ const Articles = () => {
                     {formatDate(post.created_at)}
                   </p>
                   
-                  {/* Delete Button (Only if you are the author) */}
+                  {/* Ownership Check for Delete Button */}
                   {String(currentUserId) === String(post.author_id) && (
                     <button 
                       onClick={() => handleDelete(post.id)}
-                      className="text-[#99582a] opacity-30 hover:opacity-100 text-[10px] uppercase tracking-tighter transition-opacity"
+                      className="text-[#99582a] opacity-30 hover:opacity-100 text-[10px] uppercase transition-opacity"
                     >
-                      [ Remove ]
+                      [ Strike from Record ]
                     </button>
                   )}
                 </div>
@@ -149,10 +154,10 @@ const Articles = () => {
                   "{post.content}"
                 </p>
                 
-                {/* Footer: Author & Interaction */}
+                {/* Footer Section: Social and Credits */}
                 <div className="mt-auto pt-6 border-t border-[#fdfaf5] flex justify-between items-center">
                   <div className="flex flex-col">
-                    <span className="text-[#b08968] lowercase italic text-[9px] mb-1">Archived by</span>
+                    <span className="text-[#b08968] lowercase italic text-[9px] mb-1 leading-none">Archived by</span>
                     <span className="text-[#432818] font-bold uppercase tracking-widest text-[10px]">{post.author_name}</span>
                   </div>
 
@@ -169,7 +174,7 @@ const Articles = () => {
                       </span>
                     </button>
                     <span className="text-stone-200 text-lg font-light">|</span>
-                    <button className="text-[#99582a] text-[10px] font-bold uppercase tracking-tighter hover:underline">Read →</button>
+                    <button className="text-[#99582a] text-[10px] font-bold uppercase tracking-tighter hover:underline">Open Entry →</button>
                   </div>
                 </div>
               </div>

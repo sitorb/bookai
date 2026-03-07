@@ -60,7 +60,7 @@ class ArticleListCreateView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         serializer.save(author=self.request.user)
 
-        
+
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status, permissions
@@ -85,3 +85,22 @@ class ToggleLikeView(APIView):
             'liked': liked,
             'count': article.total_likes()
         }, status=status.HTTP_200_OK)
+    
+
+
+from rest_framework import generics, permissions
+
+# 1. Custom Permission: Only the author can delete/edit
+class IsAuthorOrReadOnly(permissions.BasePermission):
+    def has_object_permission(self, request, view, obj):
+        # Read permissions are allowed to any request (GET, HEAD, OPTIONS)
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        # Write permissions are only allowed to the author of the article
+        return obj.author == request.user
+
+# 2. The View
+class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ArticleSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]

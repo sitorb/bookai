@@ -48,6 +48,7 @@ def recommend_books_api(request):
 
 from rest_framework import generics, permissions
 from .models import Article
+from .services import generate_bibliographic_tags
 from .serializers import ArticleSerializer
 
 class ArticleListCreateView(generics.ListCreateAPIView):
@@ -58,8 +59,10 @@ class ArticleListCreateView(generics.ListCreateAPIView):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
-        serializer.save(author=self.request.user)
-
+        content = self.request.data.get('content', '')
+        # The Librarian generates the tags before saving
+        tags = generate_bibliographic_tags(content)
+        serializer.save(author=self.request.user, ai_tags=tags)
 
 from rest_framework.views import APIView
 from rest_framework.response import Response

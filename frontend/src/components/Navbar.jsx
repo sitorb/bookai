@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const Navbar = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const username = localStorage.getItem('username');
+  const username = localStorage.getItem('username') || "guest";
 
   const handleLogout = () => {
     localStorage.clear();
@@ -12,54 +12,59 @@ const Navbar = () => {
   };
 
   return (
-    <nav className="bg-[#fdfaf5] border-b border-[#ede0d4] px-12 py-6 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+    <nav className="bg-[#fdfaf5]/90 backdrop-blur-md border-b border-[#ede0d4] px-8 md:px-16 py-6 flex justify-between items-center sticky top-0 z-50 shadow-sm">
       
-      {/* Brand Label */}
-      <Link to="/recommend" className="flex-shrink-0">
-        <h1 className="text-2xl font-serif text-[#432818] tracking-tight">
+      {/* Логотип */}
+      <Link to="/" className="flex-shrink-0 group">
+        <h1 className="text-2xl md:text-3xl font-serif text-[#432818] tracking-tight transition-all group-hover:opacity-80">
           The <span className="italic text-[#99582a]">Autumn</span> Librarian
         </h1>
       </Link>
       
-      {/* Navigation Links - FIXED SPACING HERE */}
-      <div className="flex items-center gap-x-10 font-serif text-[11px] uppercase tracking-[0.2em] text-[#7f5539]">
+      {/* Навигация */}
+      <div className="hidden lg:flex items-center gap-x-12 font-serif text-[12px] uppercase tracking-[0.15em] text-[#7f5539]">
         
-        <Link to="/recommend" className="hover:text-[#99582a] transition-all whitespace-nowrap">
+        <Link to="/recommend" className="hover:text-[#99582a] transition-all relative group py-2">
           Discover
+          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#99582a] transition-all group-hover:w-full"></span>
         </Link>
         
-        <Link to="/articles" className="hover:text-[#99582a] transition-all whitespace-nowrap">
+        <Link to="/articles" className="hover:text-[#99582a] transition-all relative group py-2">
           Journal
+          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#99582a] transition-all group-hover:w-full"></span>
         </Link>
         
-        <Link to="/discovery" className="hover:text-[#99582a] transition-all whitespace-nowrap">
+        <Link to="/discovery" className="hover:text-[#99582a] transition-all relative group py-2">
           Community
+          <span className="absolute bottom-0 left-0 w-0 h-[1px] bg-[#99582a] transition-all group-hover:w-full"></span>
         </Link>
 
-        {/* Auth Dependent Section */}
+        {/* Секция профиля */}
         {token ? (
-          <div className="flex items-center gap-x-8 border-l border-[#ede0d4] pl-8">
-            <Link to="/library" className="hover:text-[#432818] transition-colors">Library</Link>
-            <Link to="/profile" className="hover:text-[#432818] transition-colors">Profile</Link>
+          <div className="flex items-center gap-x-8 ml-4 border-l border-[#ede0d4] pl-10">
+            <div className="flex gap-x-6 text-[#432818] font-medium uppercase tracking-widest text-[10px]">
+              <Link to="/library" className="hover:text-[#99582a] transition-colors">Library</Link>
+              <Link to="/profile" className="hover:text-[#99582a] transition-colors">Profile</Link>
+            </div>
             
-            <div className="flex items-center gap-x-4">
-              <span className="text-[10px] text-[#b08968] lowercase italic opacity-70">
-                {username}
+            <div className="flex items-center gap-x-5 bg-[#ede0d4]/40 px-5 py-2 rounded-full border border-[#ddb892]/50">
+              <span className="text-[11px] text-[#432818] font-bold lowercase italic">
+                @{username}
               </span>
               <button 
                 onClick={handleLogout} 
-                className="text-[#99582a] text-[10px] font-bold hover:underline"
+                className="text-[#99582a] text-[10px] font-black uppercase tracking-widest hover:text-[#432818] transition-colors border-l border-[#ddb892] pl-4"
               >
-                Logout
+                Exit
               </button>
             </div>
           </div>
         ) : (
           <Link 
             to="/login" 
-            className="ml-4 bg-[#432818] text-[#fdfaf5] px-6 py-2 rounded-full hover:bg-[#99582a] transition-all text-[10px] tracking-widest"
+            className="ml-8 bg-[#432818] text-[#fdfaf5] px-8 py-3 rounded-full hover:bg-[#99582a] transition-all text-[11px] tracking-[0.2em] shadow-md"
           >
-            Enter Archives
+            ENTER ARCHIVES
           </Link>
         )}
       </div>

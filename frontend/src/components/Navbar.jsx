@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const Navbar = () => {
   const navigate = useNavigate();
   const token = localStorage.getItem('token');
-  const username = localStorage.getItem('username') || "guest";
+  const username = localStorage.getItem('username') || "sitora";
 
   const handleLogout = () => {
     localStorage.clear();
@@ -21,8 +21,8 @@ const Navbar = () => {
         </h1>
       </Link>
       
-      {/* Навигация */}
-      <div className="hidden lg:flex items-center gap-x-12 font-serif text-[12px] uppercase tracking-[0.15em] text-[#7f5539]">
+      {/* Ссылки (теперь с gap-x-10, чтобы не слипались) */}
+      <div className="hidden lg:flex items-center gap-x-10 font-serif text-[12px] uppercase tracking-[0.15em] text-[#7f5539]">
         
         <Link to="/recommend" className="hover:text-[#99582a] transition-all relative group py-2">
           Discover
@@ -47,23 +47,15 @@ const Navbar = () => {
               <Link to="/profile" className="hover:text-[#99582a] transition-colors">Profile</Link>
             </div>
             
-            <div className="flex items-center gap-x-5 bg-[#ede0d4]/40 px-5 py-2 rounded-full border border-[#ddb892]/50">
-              <span className="text-[11px] text-[#432818] font-bold lowercase italic">
-                @{username}
-              </span>
-              <button 
-                onClick={handleLogout} 
-                className="text-[#99582a] text-[10px] font-black uppercase tracking-widest hover:text-[#432818] transition-colors border-l border-[#ddb892] pl-4"
-              >
+            <div className="flex items-center gap-x-4 bg-[#ede0d4]/40 px-4 py-2 rounded-full border border-[#ddb892]/50">
+              <span className="text-[10px] text-[#432818] font-bold italic">@{username}</span>
+              <button onClick={handleLogout} className="text-[#99582a] text-[10px] font-black uppercase border-l border-[#ddb892] pl-3 hover:text-red-600 transition-colors">
                 Exit
               </button>
             </div>
           </div>
         ) : (
-          <Link 
-            to="/login" 
-            className="ml-8 bg-[#432818] text-[#fdfaf5] px-8 py-3 rounded-full hover:bg-[#99582a] transition-all text-[11px] tracking-[0.2em] shadow-md"
-          >
+          <Link to="/login" className="bg-[#432818] text-[#fdfaf5] px-6 py-2 rounded-full hover:bg-[#99582a] transition-all text-[11px] tracking-widest">
             ENTER ARCHIVES
           </Link>
         )}

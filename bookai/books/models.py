@@ -43,6 +43,7 @@ class Article(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
     ai_tags = models.CharField(max_length=255, blank=True, null=True)
+    archivist_note = models.TextField(blank=True, null=True) # The AI summary
 
     class Meta:
         ordering = ['-created_at']

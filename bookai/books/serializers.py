@@ -17,7 +17,7 @@ class ArticleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Article
-        fields = ['id', 'title', 'author_name', 'category', 'content', 'created_at', 'likes_count', 'is_liked']
+        fields = ['id', 'title', 'author_name', 'category', 'content', 'created_at', 'likes_count', 'is_liked', 'ai_tags', 'archivist_note']
 
     def get_is_liked(self, obj):
         # 1. Get the request from the context

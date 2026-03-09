@@ -12,3 +12,11 @@ def generate_bibliographic_tags(content):
     # Mocking the AI response for now so you can test immediately
     # You can replace this with a real API call later
     return "#ArchiveDiscovery, #LiteraryMusings, #VintageInk"
+def generate_ai_metadata(content):
+    # In a real app, you'd prompt the AI: 
+    # "Summarize this in 15 words as a formal librarian, and give 3 tags."
+    
+    mock_note = "A compelling reflection on the intersection of physical archives and digital memory."
+    mock_tags = "#ArchiveLogic, #MemoryStudies, #VintageInk"
+    
+    return mock_note, mock_tags

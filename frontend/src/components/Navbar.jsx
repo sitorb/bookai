@@ -2,62 +2,69 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const Navbar = () => {
-    const navigate = useNavigate();
-    const token = localStorage.getItem('token');
-    const username = localStorage.getItem('username');
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+  const username = localStorage.getItem('username');
 
-    const handleLogout = () => {
-        localStorage.clear(); // Clears token and user info
-        navigate('/login'); // Redirects to login page
-    };
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate('/login');
+  };
 
-    return (
-        <nav className="bg-white border-b border-stone-200 px-8 py-4 flex justify-between items-center shadow-sm sticky top-0 z-50">
-            {/* Branding - Leads back to the main recommendation engine */}
-            <Link to="/recommend" className="text-2xl font-serif font-bold text-stone-900 tracking-tight">
-                The <span className="italic text-[#99582a]">Autumn</span> Librarian
-            </Link>
+  return (
+    <nav className="bg-[#fdfaf5] border-b border-[#ede0d4] px-12 py-6 flex justify-between items-center sticky top-0 z-50 shadow-sm">
+      
+      {/* Brand Label */}
+      <Link to="/recommend" className="flex-shrink-0">
+        <h1 className="text-2xl font-serif text-[#432818] tracking-tight">
+          The <span className="italic text-[#99582a]">Autumn</span> Librarian
+        </h1>
+      </Link>
+      
+      {/* Navigation Links - FIXED SPACING HERE */}
+      <div className="flex items-center gap-x-10 font-serif text-[11px] uppercase tracking-[0.2em] text-[#7f5539]">
+        
+        <Link to="/recommend" className="hover:text-[#99582a] transition-all whitespace-nowrap">
+          Discover
+        </Link>
+        
+        <Link to="/articles" className="hover:text-[#99582a] transition-all whitespace-nowrap">
+          Journal
+        </Link>
+        
+        <Link to="/discovery" className="hover:text-[#99582a] transition-all whitespace-nowrap">
+          Community
+        </Link>
+
+        {/* Auth Dependent Section */}
+        {token ? (
+          <div className="flex items-center gap-x-8 border-l border-[#ede0d4] pl-8">
+            <Link to="/library" className="hover:text-[#432818] transition-colors">Library</Link>
+            <Link to="/profile" className="hover:text-[#432818] transition-colors">Profile</Link>
             
-            <div className="flex gap-8 items-center font-serif text-sm uppercase tracking-widest text-stone-500">
-                {/* --- Public Links (Visible to everyone) --- */}
-                <Link to="/recommend" className="hover:text-[#99582a] transition-colors">Discover</Link>
-                
-                {/* NEW: Link to your Articles/Journal page */}
-                <Link to="/articles" className="hover:text-[#99582a] transition-colors">Journal</Link>
-                
-                <Link to="/discovery" className="hover:text-stone-900 transition-colors">Community</Link>
-
-                {/* --- Auth Links (Conditional based on token) --- */}
-                {token ? (
-                    <>
-                        <Link to="/library" className="hover:text-stone-900 transition-colors">Library</Link>
-                        <Link to="/profile" className="hover:text-stone-900 transition-colors">Profile</Link>
-                        
-                        <div className="flex items-center gap-4 ml-4 pl-4 border-l border-stone-200">
-                            <span className="text-[10px] text-stone-400 normal-case italic">
-                                Welcome, {username}
-                            </span>
-                            <button 
-                                onClick={handleLogout} 
-                                className="text-red-600 text-[10px] font-bold border border-red-100 px-3 py-1 rounded-full hover:bg-red-50 transition-all uppercase tracking-tighter"
-                            >
-                                Logout
-                            </button>
-                        </div>
-                    </>
-                ) : (
-                    <>
-                        <Link 
-                            to="/login" 
-                            className="bg-stone-800 text-white px-6 py-2 rounded-full hover:bg-[#7f5539] transition-all text-[10px]"
-                        >
-                            Enter Archives
-                        </Link>
-                    </>
-                )}
+            <div className="flex items-center gap-x-4">
+              <span className="text-[10px] text-[#b08968] lowercase italic opacity-70">
+                {username}
+              </span>
+              <button 
+                onClick={handleLogout} 
+                className="text-[#99582a] text-[10px] font-bold hover:underline"
+              >
+                Logout
+              </button>
             </div>
-        </nav>
-    );
+          </div>
+        ) : (
+          <Link 
+            to="/login" 
+            className="ml-4 bg-[#432818] text-[#fdfaf5] px-6 py-2 rounded-full hover:bg-[#99582a] transition-all text-[10px] tracking-widest"
+          >
+            Enter Archives
+          </Link>
+        )}
+      </div>
+    </nav>
+  );
 };
 
 export default Navbar;

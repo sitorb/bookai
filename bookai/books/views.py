@@ -1,9 +1,17 @@
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from books.models import Book
-from library.recommender import get_recommendations
+from django.shortcuts import get_object_or_404
+from rest_framework import generics, permissions, status
+from rest_framework.views import APIView
+from rest_framework.response import Response
 
+from .models import Book, Article
+from .serializers import ArticleSerializer
+from library.recommender import get_recommendations
+from .services import generate_ai_metadata  # Updated service import
+
+# --- Recommendation API (Function Based) ---
 @csrf_exempt
 def recommend_books_api(request):
     query = ""
@@ -17,21 +25,18 @@ def recommend_books_api(request):
     if not query:
         return JsonResponse([], safe=False)
 
-    # Логируем для проверки в терминале
-    print(f"DEBUG: Поиск для '{query}'")
+    print(f"DEBUG: Search for '{query}'")
     recommended_books = get_recommendations(str(query))
     
     results = []
-    # Определяем базовый адрес сервера для полных путей к картинкам
     domain = request.build_absolute_uri('/')[:-1] 
 
     for book in recommended_books:
-        # Проверяем наличие обложки в разных полях
         cover = None
         if hasattr(book, 'cover_image') and book.cover_image:
             cover = f"{domain}{book.cover_image.url}"
         elif hasattr(book, 'image_url') and book.image_url:
-            cover = book.image_url # Если это внешняя ссылка
+            cover = book.image_url 
 
         results.append({
             'id': book.id,
@@ -42,33 +47,40 @@ def recommend_books_api(request):
             'publication_year': getattr(book, 'publication_year', '')
         })
 
-    print(f"DEBUG: Отправлено книг: {len(results)}")
     return JsonResponse(results, safe=False)
 
+# --- Permissions ---
+class IsAuthorOrReadOnly(permissions.BasePermission):
+    """Custom permission to only allow owners of an object to edit or delete it."""
+    def has_object_permission(self, request, view, obj):
+        if request.method in permissions.SAFE_METHODS:
+            return True
+        return obj.author == request.user
 
-from rest_framework import generics, permissions
-from .models import Article
-from .services import generate_bibliographic_tags
-from .serializers import ArticleSerializer
+# --- Article Views ---
 
 class ArticleListCreateView(generics.ListCreateAPIView):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
-    
-    # Allows guests to see articles, but keeps track of user ID for the "is_liked" status
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
 
     def perform_create(self, serializer):
         content = self.request.data.get('content', '')
-        # The Librarian generates the tags before saving
-        tags = generate_bibliographic_tags(content)
-        serializer.save(author=self.request.user, ai_tags=tags)
+        
+        # 1. Ask the AI Librarian (Gemini) for a note and tags
+        note, tags = generate_ai_metadata(content)
+        
+        # 2. Save with the generated metadata
+        serializer.save(
+            author=self.request.user, 
+            archivist_note=note, 
+            ai_tags=tags
+        )
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status, permissions
-from django.shortcuts import get_object_or_404
-from .models import Article
+class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):
+    queryset = Article.objects.all()
+    serializer_class = ArticleSerializer
+    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]
 
 class ToggleLikeView(APIView):
     permission_classes = [permissions.IsAuthenticated]
@@ -88,22 +100,3 @@ class ToggleLikeView(APIView):
             'liked': liked,
             'count': article.total_likes()
         }, status=status.HTTP_200_OK)
-    
-
-
-from rest_framework import generics, permissions
-
-# 1. Custom Permission: Only the author can delete/edit
-class IsAuthorOrReadOnly(permissions.BasePermission):
-    def has_object_permission(self, request, view, obj):
-        # Read permissions are allowed to any request (GET, HEAD, OPTIONS)
-        if request.method in permissions.SAFE_METHODS:
-            return True
-        # Write permissions are only allowed to the author of the article
-        return obj.author == request.user
-
-# 2. The View
-class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):
-    queryset = Article.objects.all()
-    serializer_class = ArticleSerializer
-    permission_classes = [permissions.IsAuthenticatedOrReadOnly, IsAuthorOrReadOnly]

@@ -5,7 +5,7 @@ __pycache__/
 .venv/
 frontend/.vite/
 *.pyc
-
+.env
 # Django
 db.sqlite3
 

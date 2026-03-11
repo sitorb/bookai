@@ -5,7 +5,7 @@ from django.shortcuts import get_object_or_404
 from rest_framework import generics, permissions, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
-
+from .services import generate_bibliographic_tags, generate_archivist_note
 from .models import Book, Article
 from .serializers import ArticleSerializer
 from library.recommender import get_recommendations
@@ -75,6 +75,19 @@ class ArticleListCreateView(generics.ListCreateAPIView):
             author=self.request.user, 
             archivist_note=note, 
             ai_tags=tags
+        )
+
+    def perform_create(self, serializer):
+        content = self.request.data.get('content', '')
+        
+        # The Librarian performs two tasks:
+        tags = generate_bibliographic_tags(content)
+        note = generate_archivist_note(content)
+        
+        serializer.save(
+            author=self.request.user, 
+            ai_tags=tags,
+            archivist_note=note
         )
 
 class ArticleDetailView(generics.RetrieveUpdateDestroyAPIView):

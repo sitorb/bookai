@@ -58,3 +58,9 @@ def generate_ai_metadata(content):
         print(f"Gemini Error: {e}")
         # Return fallback data so the user can still save their post
         return "An entry awaiting formal classification.", "#Archive, #LibraryJournal, #Unsorted"
+    
+
+def generate_archivist_note(content):
+    # Logic to summarize the entry in a 'Librarian' persona
+    summary = f"An intriguing study on the themes presented. The scribe explores {content[:40]}... with a focus on historical context and archival silence."
+    return summary

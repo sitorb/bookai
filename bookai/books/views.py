@@ -113,3 +113,37 @@ class ToggleLikeView(APIView):
             'liked': liked,
             'count': article.total_likes()
         }, status=status.HTTP_200_OK)
+    
+
+
+
+# books/views.py
+from rest_framework import viewsets, status
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from .models import Collection, Article
+from .serializers import CollectionSerializer
+
+class CollectionViewSet(viewsets.ModelViewSet):
+    serializer_class = CollectionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Users only see their own Nooks
+        return Collection.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def toggle_article(self, request, pk=None):
+        collection = self.get_object()
+        article_id = request.data.get('article_id')
+        article = get_object_or_404(Article, id=article_id)
+
+        if article in collection.articles.all():
+            collection.articles.remove(article)
+            return Response({'status': 'removed'}, status=status.HTTP_200_OK)
+        else:
+            collection.articles.add(article)
+            return Response({'status': 'added'}, status=status.HTTP_200_OK)

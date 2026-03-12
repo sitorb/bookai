@@ -59,3 +59,14 @@ class Article(models.Model):
 
     def total_likes(self):
         return self.likes.count()
+    
+
+
+class Collection(models.Model):
+    name = models.CharField(max_length=100)
+    user = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='collections')
+    articles = models.ManyToManyField('Article', related_name='in_collections', blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.user.username}"

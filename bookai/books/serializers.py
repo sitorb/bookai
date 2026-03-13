@@ -28,3 +28,13 @@ class ArticleSerializer(serializers.ModelSerializer):
             return obj.likes.filter(id=request.user.id).exists()
             
         return False
+
+
+# serializers.py
+class CollectionSerializer(serializers.ModelSerializer):
+    # This line pulls the full article data instead of just IDs
+    articles = ArticleSerializer(many=True, read_only=True) 
+
+    class Meta:
+        model = Collection
+        fields = ['id', 'name', 'articles', 'created_at']

@@ -147,3 +147,30 @@ class CollectionViewSet(viewsets.ModelViewSet):
         else:
             collection.articles.add(article)
             return Response({'status': 'added'}, status=status.HTTP_200_OK)
+
+
+# books/views.py
+from django.db.models import Q
+from rest_framework.views import APIView
+from .models import Book # Assuming your core book model is named Book
+
+class BookDiscoveryView(APIView):
+    def get(self, request):
+        query = request.query_params.get('search', '')
+        category = request.query_params.get('category', '')
+        
+        books = Book.objects.all()
+        
+        if query:
+            books = books.filter(
+                Q(title__icontains=query) | 
+                Q(author__icontains=query) |
+                Q(description__icontains=query)
+            )
+            
+        if category:
+            books = books.filter(category__iexact=category)
+
+        # Let's return the top 20 matches
+        serializer = BookSerializer(books[:20], many=True)
+        return Response(serializer.data)

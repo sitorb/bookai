@@ -191,3 +191,31 @@ def random_book(request):
         serializer = BookSerializer(book)
         return Response(serializer.data)
     return Response({"error": "The library is empty."}, status=404)
+
+
+
+# books/views.py
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.response import Response
+from .models import Article, Collection
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_profile_stats(request):
+    user = request.user
+    
+    # Gathering the scholar's data
+    manuscripts_count = Article.objects.filter(author=user).count()
+    nooks_count = Collection.objects.filter(user=user).count()
+    
+    # Archival Impact (Total likes received on their articles)
+    total_impact = sum(article.likes.count() for article in Article.objects.filter(author=user))
+
+    return Response({
+        "username": user.username,
+        "date_joined": user.date_joined.strftime("%B %Y"),
+        "manuscripts_count": manuscripts_count,
+        "nooks_count": nooks_count,
+        "total_impact": total_impact,
+    })

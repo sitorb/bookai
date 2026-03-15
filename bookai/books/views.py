@@ -174,3 +174,20 @@ class BookDiscoveryView(APIView):
         # Let's return the top 20 matches
         serializer = BookSerializer(books[:20], many=True)
         return Response(serializer.data)
+
+
+# books/views.py
+import random
+from rest_framework.decorators import api_view
+from .models import Book
+
+@api_view(['GET'])
+def random_book(request):
+    # order_by('?') is great for small/medium datasets. 
+    # It picks one random record from the library.
+    book = Book.objects.order_by('?').first()
+    
+    if book:
+        serializer = BookSerializer(book)
+        return Response(serializer.data)
+    return Response({"error": "The library is empty."}, status=404)

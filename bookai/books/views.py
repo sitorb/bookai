@@ -181,6 +181,7 @@ import random
 from rest_framework.decorators import api_view
 from .models import Book
 
+
 @api_view(['GET'])
 def random_book(request):
     # order_by('?') is great for small/medium datasets. 

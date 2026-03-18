@@ -1,0 +1,17 @@
+# Web Framework & API
+django>=5.0
+djangorestframework
+django-cors-headers
+djangorestframework-simplejwt
+
+# Environment & Security
+python-dotenv
+
+# AI & Oracles
+google-genai
+openai
+
+# Data Science & Recommendation Engine
+scikit-learn
+pandas
+numpy

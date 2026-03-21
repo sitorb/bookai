@@ -79,15 +79,22 @@ class BookDiscoveryView(APIView):
         serializer = BookSerializer(books[:20], many=True)
         return Response(serializer.data)
 
+# file: books/views.py
+from rest_framework.decorators import api_view
+from rest_framework.response import Response
+from .models import Book
+from .serializers import BookSerializer
+
 @api_view(['GET'])
 def random_book(request):
+    # Picking a random volume from the shelves
     book = Book.objects.order_by('?').first()
     if book:
         serializer = BookSerializer(book)
         return Response(serializer.data)
-    # If the database is empty, the Oracle is literally silent!
+    
+    # If the library is empty, the Oracle is indeed silent
     return Response({"error": "No books in library"}, status=404)
-
 
 # --- 4. Library / Nook Views ---
 class CollectionViewSet(viewsets.ModelViewSet):

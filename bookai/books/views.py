@@ -94,8 +94,7 @@ def random_book(request):
         return Response(serializer.data)
     
     # If the library is empty, the Oracle is indeed silent
-    return Response({"error": "No books in library"}, status=404)
-
+    return Response({"message": "The library shelves are currently empty."}, status=200)
 # --- 4. Library / Nook Views ---
 class CollectionViewSet(viewsets.ModelViewSet):
     serializer_class = CollectionSerializer

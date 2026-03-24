@@ -168,3 +168,20 @@ def recommend_books_api(request):
             'publication_year': getattr(book, 'publication_year', '')
         })
     return JsonResponse(results, safe=False)
+
+
+from rest_framework import viewsets, permissions
+from .models import Collection
+from .serializers import CollectionSerializer
+
+class CollectionViewSet(viewsets.ModelViewSet):
+    serializer_class = CollectionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        # Only return collections belonging to the logged-in user
+        return Collection.objects.filter(user=self.request.user).order_by('-created_at')
+
+    def perform_create(self, serializer):
+        # Automatically set the user to the current logged-in user when creating a nook
+        serializer.save(user=self.request.user)

@@ -59,6 +59,9 @@ function App() {
               <PrivateRoute><NookDetail /></PrivateRoute>
             } />
             
+            // Inside your Routes block
+            <Route path="/nooks" element={<MyNooks />} />
+
             <Route path="/articles/create" element={
               <PrivateRoute><CreateArticle /></PrivateRoute>
             } />

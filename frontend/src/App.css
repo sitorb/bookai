@@ -1,42 +1,92 @@
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
+/* General Library Palette */
+:root {
+  --dark-oak: #3d2b1f;
+  --medium-oak: #5c4033;
+  --aged-paper: #f4ecd8;
+  --ink-black: #1a1a1a;
+  --gold-leaf: #c5a059;
 }
 
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
+.nooks-page {
+  background-color: var(--aged-paper);
+  min-height: 100vh;
+  padding: 40px;
+  font-family: 'Cormorant Garamond', 'Times New Roman', serif;
+  color: var(--ink-black);
 }
 
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
+/* The Bookshelf Grid */
+.nooks-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 30px;
+  margin-top: 40px;
+  border-top: 8px solid var(--dark-oak); /* The "Top Shelf" */
+  padding-top: 20px;
 }
 
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
+/* Individual Shelf (Nook) */
+.nook-card {
+  background: var(--medium-oak);
+  border: 4px solid var(--dark-oak);
+  border-radius: 2px;
+  padding: 20px;
+  color: var(--aged-paper);
+  box-shadow: 0 10px 20px rgba(0,0,0,0.3), inset 0 0 50px rgba(0,0,0,0.2);
+  transition: transform 0.3s ease;
+  position: relative;
 }
 
-.card {
-  padding: 2em;
+.nook-card:hover {
+  transform: translateY(-5px);
 }
 
-.read-the-docs {
-  color: #888;
+/* The "Books" inside the shelf */
+.nook-card ul {
+  list-style: none;
+  padding: 0;
+}
+
+.nook-card li {
+  background: var(--aged-paper);
+  color: var(--ink-black);
+  margin-bottom: 8px;
+  padding: 5px 10px;
+  border-left: 10px solid var(--gold-leaf); /* Represents the spine */
+  font-size: 0.9rem;
+  box-shadow: 2px 2px 5px rgba(0,0,0,0.1);
+}
+
+/* The Oracle Button */
+.oracle-btn {
+  background-color: var(--dark-oak);
+  color: var(--gold-leaf);
+  border: 2px solid var(--gold-leaf);
+  padding: 12px 24px;
+  font-variant: small-caps;
+  letter-spacing: 2px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.oracle-btn:hover {
+  background-color: var(--gold-leaf);
+  color: var(--dark-oak);
+}
+
+/* Vintage Result Card */
+.card-vintage {
+  background-image: radial-gradient(circle, #fff9e6 0%, #f4ecd8 100%);
+  border: 1px solid #d4c5a1;
+  padding: 30px;
+  margin-top: 20px;
+  position: relative;
+}
+
+.card-vintage::before {
+  content: "";
+  position: absolute;
+  top: 10px; left: 10px; right: 10px; bottom: 10px;
+  border: 1px solid rgba(197, 160, 89, 0.3);
+  pointer-events: none;
 }

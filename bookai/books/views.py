@@ -50,9 +50,7 @@ def random_book(request):
 # ==========================================
 # 2. THE JOURNAL (Articles & Likes)
 # ==========================================
-
-class ArticleListCreateView(generics.ListCreateView):
-    """Users can view all public articles and write their own."""
+class ArticleListCreateView(generics.ListCreateAPIView):
     queryset = Article.objects.all()
     serializer_class = ArticleSerializer
     permission_classes = [IsAuthenticatedOrReadOnly]

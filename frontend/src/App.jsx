@@ -14,13 +14,13 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Discovery from './pages/Discovery';
 import Library from './pages/Library';
-import NookDetail from './pages/NookDetail'; // The view for specific collections
+import NookDetail from './pages/NookDetail'; 
+import MyNooks from './pages/MyNooks'; // <--- THE FIXED IMPORT
 import Profile from './pages/Profile';
 
 function App() {
   return (
     <Router>
-      {/* Toast notifications for "Hearts" and "Saves" */}
       <Toaster 
         position="bottom-right"
         toastOptions={{
@@ -35,7 +35,6 @@ function App() {
       />
       
       <div className="min-h-screen bg-[#fdfaf5] flex flex-col">
-        {/* The Navbar stays outside the Routes so it never disappears */}
         <Navbar /> 
         
         <main className="flex-grow">
@@ -59,8 +58,10 @@ function App() {
               <PrivateRoute><NookDetail /></PrivateRoute>
             } />
             
-            // Inside your Routes block
-            <Route path="/nooks" element={<MyNooks />} />
+            {/* Personal Collections */}
+            <Route path="/nooks" element={
+              <PrivateRoute><MyNooks /></PrivateRoute>
+            } />
 
             <Route path="/articles/create" element={
               <PrivateRoute><CreateArticle /></PrivateRoute>
@@ -70,10 +71,10 @@ function App() {
               <PrivateRoute><Profile /></PrivateRoute>
             } />
 
-            {/* Default Path: Direct to the Consultation Room */}
+            {/* Default Path: Direct to the Consultation Room (Recommend) */}
             <Route path="/" element={<Navigate to="/recommend" replace />} />
             
-            {/* Catch-all for wandering patrons */}
+            {/* Catch-all */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </main>

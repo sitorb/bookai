@@ -3,10 +3,12 @@ from .models import Book, Article, Collection
 
 # --- 1. Book Serializer ---
 class BookSerializer(serializers.ModelSerializer):
+    # Expose image_url as cover_image so the frontend doesn't need updating
+    cover_image = serializers.CharField(source='image_url', read_only=True, allow_null=True)
+
     class Meta:
         model = Book
-        # Ensure these fields match your models.py exactly!
-        fields = ['id', 'title', 'author', 'summary', 'cover_image']
+        fields = ['id', 'title', 'author', 'summary', 'category', 'publication_year', 'cover_image']
 
 # --- 2. Article (Journal) Serializer ---
 class ArticleSerializer(serializers.ModelSerializer):

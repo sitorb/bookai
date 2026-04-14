@@ -6,14 +6,14 @@ const Profile = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = 'http://127.0.0.1:8000';
+  const API_BASE_URL = 'http://127.0.0.1:8000/api/books';
   const token = localStorage.getItem('token');
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/profile/stats/`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const res = await axios.get(`${API_BASE_URL}/profile/stats/`, {
+          headers: { Authorization: `Token ${token}` }
         });
         setStats(res.data);
       } catch (err) {

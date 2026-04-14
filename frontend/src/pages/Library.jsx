@@ -9,7 +9,7 @@ const Library = () => {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [newNookName, setNewNookName] = useState("");
 
-  const API_BASE_URL = 'http://127.0.0.1:8000';
+  const API_BASE_URL = 'http://127.0.0.1:8000/api/books';
   const token = localStorage.getItem('token');
 
   useEffect(() => {
@@ -18,8 +18,8 @@ const Library = () => {
 
   const fetchCollections = async () => {
     try {
-      const res = await axios.get(`${API_BASE_URL}/api/collections/`, {
-        headers: { Authorization: `Bearer ${token}` }
+      const res = await axios.get(`${API_BASE_URL}/nooks/`, {
+        headers: { Authorization: `Token ${token}` }
       });
       setCollections(res.data);
     } catch (err) {
@@ -33,9 +33,9 @@ const Library = () => {
     e.preventDefault();
     if (!newNookName) return;
     try {
-      const res = await axios.post(`${API_BASE_URL}/api/collections/`, 
+      const res = await axios.post(`${API_BASE_URL}/nooks/`,
         { name: newNookName },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Token ${token}` } }
       );
       setCollections([...collections, res.data]);
       setNewNookName("");

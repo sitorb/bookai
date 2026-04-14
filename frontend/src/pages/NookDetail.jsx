@@ -9,14 +9,14 @@ const NookDetail = () => {
   const [nook, setNook] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  const API_BASE_URL = 'http://127.0.0.1:8000';
+  const API_BASE_URL = 'http://127.0.0.1:8000/api/books';
   const token = localStorage.getItem('token');
 
   useEffect(() => {
     const fetchNookContent = async () => {
       try {
-        const res = await axios.get(`${API_BASE_URL}/api/collections/${id}/`, {
-          headers: { Authorization: `Bearer ${token}` }
+        const res = await axios.get(`${API_BASE_URL}/nooks/${id}/`, {
+          headers: { Authorization: `Token ${token}` }
         });
         setNook(res.data);
       } catch (err) {
@@ -31,9 +31,9 @@ const NookDetail = () => {
 
   const handleRemoveFromNook = async (articleId) => {
     try {
-      await axios.post(`${API_BASE_URL}/api/collections/${id}/toggle_article/`, 
+      await axios.post(`${API_BASE_URL}/nooks/${id}/toggle_article/`,
         { article_id: articleId },
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Token ${token}` } }
       );
       // Update local state to remove the item instantly
       setNook({

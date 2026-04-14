@@ -14,7 +14,7 @@ const Recommend = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await axios.post(`${API_BASE_URL}/api/recommend/`, { mood });
+      const response = await axios.post(`${API_BASE_URL}/api/library/recommend/`, { mood });
       setBooks(response.data);
       if (response.data.length === 0) {
         setError("The Librarian searched every shelf but found nothing. Try a different description.");

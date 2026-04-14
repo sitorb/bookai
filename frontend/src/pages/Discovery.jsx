@@ -8,12 +8,12 @@ const Discovery = () => {
   const [loading, setLoading] = useState(false);
   const [isShuffling, setIsShuffling] = useState(false);
 
-  const API_URL = 'http://127.0.0.1:8000/api';
+  const API_URL = 'http://127.0.0.1:8000/api/books';
 
   const fetchBooks = async (query = "") => {
     setLoading(true);
     try {
-      const res = await axios.get(`${API_URL}/discovery/?search=${query}`);
+      const res = await axios.get(`${API_URL}/discovery/?q=${query}`);
       setBooks(res.data);
     } catch (err) {
       toast.error("The catalogs are jammed.");

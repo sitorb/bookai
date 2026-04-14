@@ -42,9 +42,11 @@ def random_book(request):
     if book:
         serializer = BookSerializer(book)
         return Response(serializer.data)
-    
-    # Return a 200 with a message instead of a 404 to help the frontend handle empty states
-    return Response({"message": "The library shelves are currently empty."}, status=200)
+
+    return Response(
+        {"message": "The library shelves are currently empty."},
+        status=status.HTTP_404_NOT_FOUND
+    )
 
 
 # ==========================================
@@ -111,12 +113,24 @@ class CollectionViewSet(viewsets.ModelViewSet):
         """Custom endpoint to toss an article onto a specific shelf."""
         collection = self.get_object()
         article_id = request.data.get('article_id')
-        
+
         if not article_id:
             return Response({"error": "No article ID provided"}, status=400)
-            
+
         collection.articles.add(article_id)
         return Response({'status': f'Article {article_id} added to {collection.name}'}, status=200)
+
+    @action(detail=True, methods=['post'])
+    def toggle_article(self, request, pk=None):
+        """Removes an article from the shelf (used by NookDetail un-shelf button)."""
+        collection = self.get_object()
+        article_id = request.data.get('article_id')
+
+        if not article_id:
+            return Response({"error": "No article ID provided"}, status=400)
+
+        collection.articles.remove(article_id)
+        return Response({'status': f'Article {article_id} removed from {collection.name}'}, status=200)
 
 
 # ==========================================
